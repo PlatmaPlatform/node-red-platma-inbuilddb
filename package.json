@@ -1,0 +1,49 @@
+{
+  "name": "@platmac/node-red-platma-inbuilddb",
+  "version": "1.0.2",
+  "description": "Node for retrieving tracking information from Nova Poshta.",
+  "private": false,
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/platma-inbuilddb_spec.js"
+  },
+  "keywords": [
+    "node-red",
+    "platma",
+	"inbuilddb"
+  ],
+  "homepage": "https://github.com/PlatmaC/node-red-platma-inbuilddb",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PlatmaC/node-red-platma-inbuilddb.git"
+  },
+  "author": "Hooke <platma@platma.com>",
+  "license": "ISC",
+  "node-red": {
+    "version": ">=2.0.0",
+    "nodes": {
+      "platma-inbuilddb": "platma-inbuilddb.js"
+    }
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "mocha": "^10.2.0",
+    "node-red": "^3.0.2",
+    "node-red-node-test-helper": "^0.3.2",
+    "prettier": "^2.3.2"
+  },
+  "bugs": {
+    "url": "https://github.com/PlatmaC/node-red-platma-inbuilddb/issues"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "axios": "^1.4.0"
+  }
+}

@@ -1,0 +1,43 @@
+<script type="text/javascript">
+    RED.nodes.registerType('platma-whoami',{
+        category: 'function',
+        color: '#aff3e3',
+        defaults: {
+			name: { value: '' },
+			method: { value: 'getall' }
+        },
+        inputs:1,
+        outputs:1,
+        outputLabels: [],
+        icon: "white-globe.svg",
+        config: {},
+        label: function () {
+            return this.name;
+        },
+		oneditprepare: function () {
+			const node = this;
+			$('node-input-method').on('change', function(){
+				node.updateWires();
+			})
+		},
+    });
+</script>
+
+<script type="text/html" data-help-name="platma-whoami">
+	<div class='form-row'>
+		<label for="node-input-name"><i class="icon-tag"></i>Name</label>
+		<input type="text" id= "node-input-name" placeholder="Name" data-i18n="[placeholder]common.label.name" />
+	</div>
+		<div class='form-row'>
+		<label for="node-input-method"><i class="icon-tag"></i>Method</label>
+		<select id= "node-input-method" 
+		style="width: 50%;" 
+		data-i18n="[placeholder]common.label.method" />
+			<option> value="getall"</option>
+			<option> value="getone"</option>
+			<option> value="store"</option>
+		</select>
+	</div>
+    <p>A node for receiving personal information of the Platma user.</p>
+    <p>It returns info about a Platma user who initiates an HTTP request.</p>
+</script>
