@@ -1,70 +1,141 @@
 module.exports = function (RED) {
   const axios = require('axios');
+  const CORESERVICE_API_HOST = process?.env?.CORESERVICE_API_HOST;
+  const token = process?.env?.CORESERVICE_API_TOKEN;
+  const userId = parseInt(process?.env?.USER_ID);
+  const appId = parseInt(process?.env?.APP_ID);
+
+  if (!CORESERVICE_API_HOST || !token || !userId || !appId){
+    node.error(RED._('platma-inbuilddb.errors.lack-envs'));
+    node.status({ fill: 'red', shape: 'dot', text: 'Error. There is a lack of env data' });
+    nodeDone();
+    return;
+  }
+
   function PlatmaInbuildDb(config) {
     RED.nodes.createNode(this, config);
     const node = this;
     node.on('input', function (msg, nodeSend, nodeDone) {
-      if (!msg?.req?.headers?.authorization || !msg?.req?.headers?.coreservice) {
-        node.error(RED._('platma-inbuilddb.errors.no-user-data'), msg);
-        node.status({ fill: 'yellow', shape: 'dot', text: 'Error. No user data' });
-        nodeDone();
-        return;
-      }
 
-      const token = msg.req.headers.authorization.split('Bearer ')[1];
-      const coreservice = msg.req.headers.coreservice;
+      node.status({
+        fill: 'green',
+        shape: 'dot',
+        text: 'platma-inbuilddb.status.requesting',
+      });
 
-      if (!token) {
-        node.error(RED._('platma-whoami.errors.no-valid-user-data'), msg);
-        node.status({ fill: 'yellow', shape: 'dot', text: 'Error. No valid user data' });
+      if (!config.method || !config.tablename) {
+        node.error(RED._('platma-inbuilddb.errors.no-configured'));
+        node.status({ fill: 'red', shape: 'dot', text: 'Error. No configured' });
         nodeDone();
         return;
       }
 
       node.status({
-        fill: 'green',
+        fill: 'blue',
         shape: 'dot',
-        text: 'http-request-np.status.requesting',
+        text: 'platma-inbuilddbp.status.requesting',
       });
 
-      axios({
-        method: 'get',
-        url: `${coreservice}/users/me`,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((res) => {
-          const platmaUser = res?.data?.user;
-          platmaUser.uiApps = null;
-          msg.platmaUser = platmaUser;
+      let getByTableId;
+      if (config.method === 'getone') getByTableId = `?id=eq.${msg?.tableId || 1}`
 
-          node.status({});
-          nodeSend(msg);
-          nodeDone();
+      if (config.method === 'getall' || config.method === 'getone') {
+        axios({
+          method: 'get',
+          url: `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${getByTableId}`,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            userId,
+            appId
+          },
         })
-        .catch((err) => {
-          if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
-            node.error(RED._('common.notification.errors.no-response'), msg);
-            node.status({
-              fill: 'red',
-              shape: 'ring',
-              text: 'common.notification.errors.no-response',
-            });
-          } else {
-            node.error(err, msg);
-            node.status({ fill: 'red', shape: 'ring', text: err.code });
-          }
-          msg.payload = err.toString();
-          msg.statusCode =
-            err.code || (err.response ? err.response.statusCode : undefined);
+            .then((res) => {
+              msg.statusCode = res.status;
+              const body = res.data;
+              msg.payload = {
+                success: body.success,
+                rawResponse: body,
+              };
+              node.status({});
+              nodeSend(msg);
+              nodeDone();
+            })
+            .catch((err) => {
+              if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
+                node.error(RED._('common.notification.errors.no-response'), msg);
+                node.status({
+                  fill: 'red',
+                  shape: 'ring',
+                  text: 'common.notification.errors.no-response',
+                });
+              } else {
+                node.error(err, msg);
+                node.status({fill: 'red', shape: 'ring', text: err.code});
+              }
+              msg.payload = err.toString();
+              msg.statusCode =
+                  err.code || (err.response ? err.response.statusCode : undefined);
 
-          if (!config.senderr) {
-            nodeSend(msg);
-          }
+              if (!config.senderr) {
+                nodeSend(msg);
+              }
+              nodeDone();
+            });
+      }  else if (config.method === 'store'){
+        if (!msg.tableItem){
+          node.error(RED._('platma-inbuilddb.errors.no-tableItem'));
+          node.status({ fill: 'red', shape: 'dot', text: 'Error. No no-tableItem' });
           nodeDone();
-        });
+          return;
+        }
+        axios({
+          method: 'post',
+          url: `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D`,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            userId,
+            appId
+          },
+          data: {...msg.tableItem}
+        })
+            .then((res) => {
+              msg.statusCode = res.status;
+              const body = res.data;
+              msg.payload = {
+                success: body.success,
+                rawResponse: body,
+              };
+              node.status({});
+              nodeSend(msg);
+              nodeDone();
+            })
+            .catch((err) => {
+              if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
+                node.error(RED._('common.notification.errors.no-response'), msg);
+                node.status({
+                  fill: 'red',
+                  shape: 'ring',
+                  text: 'common.notification.errors.no-response',
+                });
+              } else {
+                node.error(err, msg);
+                node.status({fill: 'red', shape: 'ring', text: err.code});
+              }
+              msg.payload = err.toString();
+              msg.statusCode =
+                  err.code || (err.response ? err.response.statusCode : undefined);
+
+              if (!config.senderr) {
+                nodeSend(msg);
+              }
+              nodeDone();
+            });
+      }
+    })
+
+
+    node.on('close', function () {
+      node.status({});
     });
 
     node.on('close', function () {

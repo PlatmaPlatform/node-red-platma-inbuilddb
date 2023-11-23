@@ -1,7 +1,7 @@
 {
   "name": "@platmac/node-red-platma-inbuilddb",
-  "version": "1.0.2",
-  "description": "Node for retrieving tracking information from Nova Poshta.",
+  "version": "1.0.1",
+  "description": "Node is providing full access to InBuild DB of Platma.",
   "private": false,
   "main": "index.js",
   "scripts": {
