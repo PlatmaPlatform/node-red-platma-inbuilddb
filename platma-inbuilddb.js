@@ -31,8 +31,10 @@ module.exports = function (RED) {
         return;
       }
 
+      const isTableIdNeeds = config.method === 'getone' || config.method === 'change' || config.method === 'delete';
+
       let byTableId;
-      if ((config.method === 'getone' || config.method === 'change') && !msg.tableId){
+      if (isTableIdNeeds && !msg.tableId){
         node.error(RED._('platma-inbuilddb.errors.no-tableId'));
         node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableId' });
         nodeDone();
@@ -41,11 +43,21 @@ module.exports = function (RED) {
         byTableId = `?id=eq.${msg?.tableId}`
       }
 
-      if ((config.method === 'getone' || config.method === 'change') && !msg.tableItem){
+      if (isTableIdNeeds && !msg.tableItem){
         node.error(RED._('platma-inbuilddb.errors.no-tableItem'));
-        node.status({ fill: 'red', shape: 'dot', text: 'Error. No no-tableItem' });
+        node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableItem' });
         nodeDone();
         return;
+      }
+
+      let byFilter;
+      if (config.method === 'getone' && !msg.tableFilter){
+        node.error(RED._('platma-inbuilddb.errors.no-tableFilter'));
+        node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableFilter' });
+        nodeDone();
+        return;
+      } else {
+        byFilter = msg.tableFilter;
       }
 
       node.status({
@@ -54,57 +66,43 @@ module.exports = function (RED) {
         text: 'platma-inbuilddbp.status.requesting',
       });
 
-      if (config.method === 'getall' || config.method === 'getone') {
-        axios({
-          method: 'get',
-          url: `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId || ''}`,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            userId,
-            appId
-          },
-        })
-            .then((res) => {
-              setResponse(msg, res, node, nodeSend, nodeDone);
-            })
-            .catch((err) => {
-              catchError(err, node, msg, config, nodeSend, nodeDone)
-            });
-      }  else if (config.method === 'store'){
-        axios({
-          method: 'post',
-          url: `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D`,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            userId,
-            appId
-          },
-          data: {...msg.tableItem}
-        })
-            .then((res) => {
-              setResponse(msg, res, node, nodeSend, nodeDone);
-            })
-            .catch((err) => {
-              catchError(err, node, msg, config, nodeSend, nodeDone)
-            });
+      let method, url;
+
+      if (config.method === 'getall') {
+        method = 'get';
+        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D`
+      }  else if ( config.method === 'getone') {
+        method = 'get';
+        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId}`;
+      }  else if ( config.method === 'getfiltered') {
+        method = 'get';
+        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byFilter}`;
+      } else if (config.method === 'store'){
+        method = 'post';
+        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D`
       } else if (config.method === 'change'){
-        axios({
-          method: 'put',
-          url: `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId}`,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            userId,
-            appId
-          },
-          data: {...msg.tableItem}
-        })
-            .then((res) => {
-              setResponse(msg, res, node, nodeSend, nodeDone);
-            })
-            .catch((err) => {
-              catchError(err, node, msg, config, nodeSend, nodeDone);
-            });
+        method = 'put';
+        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId}`;
+      } else if (config.method === 'delete'){
+        method = 'del';
+        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId}`;
       }
+      axios({
+        method,
+        url,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          userId,
+          appId
+        },
+        data: {...msg.tableItem}
+      })
+          .then((res) => {
+            setResponse(msg, res, node, nodeSend, nodeDone);
+          })
+          .catch((err) => {
+            catchError(err, node, msg, config, nodeSend, nodeDone);
+          });
     })
 
 
