@@ -32,6 +32,7 @@ module.exports = function (RED) {
       }
 
       const isTableIdNeeds = config.method === 'getone' || config.method === 'change' || config.method === 'delete';
+      const isTableItem = config.method === 'store' || config.method === 'change';
 
       let byTableId;
       if (isTableIdNeeds && !msg.tableId){
@@ -43,7 +44,7 @@ module.exports = function (RED) {
         byTableId = `?id=eq.${msg?.tableId}`
       }
 
-      if (isTableIdNeeds && !msg.tableItem){
+      if (isTableItem && !msg.tableItem){
         node.error(RED._('platma-inbuilddb.errors.no-tableItem'));
         node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableItem' });
         nodeDone();
@@ -51,7 +52,7 @@ module.exports = function (RED) {
       }
 
       let byFilter;
-      if (config.method === 'getone' && !msg.tableFilter){
+      if (config.method === 'getall' && !msg.tableFilter){
         node.error(RED._('platma-inbuilddb.errors.no-tableFilter'));
         node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableFilter' });
         nodeDone();
