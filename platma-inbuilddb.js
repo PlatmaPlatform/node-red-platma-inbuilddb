@@ -24,41 +24,69 @@ module.exports = function (RED) {
         text: 'platma-inbuilddb.status.requesting',
       });
 
-      if (!config.method || !config.tablename) {
+      let operation, byTableId, byFilter;
+      let {tableName, tableId, tableIdToDel, tableItem, tableFilter} = msg;
+
+      if (!config.tablename && !tableName) {
         node.error(RED._('platma-inbuilddb.errors.no-configured'));
-        node.status({ fill: 'red', shape: 'dot', text: 'Error. No configured' });
+        node.status({fill: 'red', shape: 'dot', text: 'Error. No configured'});
         nodeDone();
         return;
       }
 
-      const isTableIdNeeds = config.method === 'getone' || config.method === 'change' || config.method === 'delete';
-      const isTableItem = config.method === 'store' || config.method === 'change';
+      if (config.tablename && config.method){
+        operation = config.method;
 
-      let byTableId;
-      if (isTableIdNeeds && !msg.tableId){
-        node.error(RED._('platma-inbuilddb.errors.no-tableId'));
-        node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableId' });
-        nodeDone();
-        return;
+        const isTableIdNeeds = config.method === 'getone' || config.method === 'change' || config.method === 'delete';
+        const isTableItem = config.method === 'store' || config.method === 'change';
+
+        if (isTableIdNeeds && !msg.tableId){
+          node.error(RED._('platma-inbuilddb.errors.no-tableId'));
+          node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableId' });
+          nodeDone();
+          return;
+        } else {
+          byTableId = msg?.tableId? `?id=eq.${msg?.tableId}`: '';
+        }
+
+        if (isTableItem && !msg.tableItem){
+          node.error(RED._('platma-inbuilddb.errors.no-tableItem'));
+          node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableItem' });
+          nodeDone();
+          return;
+        }
+
+        if (config.method === 'getfiltered' && !msg.tableFilter){
+          node.error(RED._('platma-inbuilddb.errors.no-tableFilter'));
+          node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableFilter' });
+          nodeDone();
+          return;
+        } else {
+          byFilter = msg.tableFilter|| '';
+        }
       } else {
-        byTableId = `?id=eq.${msg?.tableId}`
-      }
+        const isListFiltered = !!tableName && !tableItem && !tableIdToDel;
+        const isCreateRow = !!tableName && !!tableItem &&  !tableId && !tableIdToDel;
+        const isUpdateRow = !!tableName && !!tableItem && !!tableId && !tableIdToDel;
+        const isDeleteRow = !!tableName &&  !tableItem &&  !tableId && !!tableIdToDel;
 
-      if (isTableItem && !msg.tableItem){
-        node.error(RED._('platma-inbuilddb.errors.no-tableItem'));
-        node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableItem' });
-        nodeDone();
-        return;
-      }
-
-      let byFilter;
-      if (config.method === 'getall' && !msg.tableFilter){
-        node.error(RED._('platma-inbuilddb.errors.no-tableFilter'));
-        node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableFilter' });
-        nodeDone();
-        return;
-      } else {
-        byFilter = msg.tableFilter;
+        byTableId = !!tableId? `?id=eq.${tableId}`: '';
+        byFilter = tableFilter || '';
+        if (isListFiltered) {
+          operation = 'list';
+        } else if (isCreateRow) {
+          operation = 'create';
+        } else if (isUpdateRow) {
+          operation = 'update';
+        } else if (isDeleteRow) {
+          operation = 'delete';
+          byTableId = !!tableIdToDel? `?id=eq.${tableIdToDel}`: '';
+        } else {
+          node.error(RED._('platma-inbuilddb.errors.unknown-operation'));
+          node.status({fill: 'red', shape: 'dot', text: 'Error. A lack of arguments to predict an operation'});
+          nodeDone();
+          return;
+        }
       }
 
       node.status({
@@ -67,27 +95,24 @@ module.exports = function (RED) {
         text: 'platma-inbuilddbp.status.requesting',
       });
 
-      let method, url;
+      const url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${tableName || config.tablename}%7D${byTableId}${byFilter}`;
+      let method;
 
-      if (config.method === 'getall') {
+      if (operation === 'getall') {
         method = 'get';
-        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D`
-      }  else if ( config.method === 'getone') {
+      }  else if ( operation === 'getone') {
         method = 'get';
-        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId}`;
-      }  else if ( config.method === 'getfiltered') {
+      }  else if ( operation === 'getfiltered' || operation === 'list') {
         method = 'get';
-        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byFilter}`;
-      } else if (config.method === 'store'){
+      } else if (operation === 'store' || operation === 'create'){
         method = 'post';
-        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D`
-      } else if (config.method === 'change'){
+      } else if (operation === 'change' || operation === 'update'){
         method = 'put';
-        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId}`;
-      } else if (config.method === 'delete'){
-        method = 'del';
-        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${config.tablename}%7D${byTableId}`;
+      } else if (operation === 'delete'){
+        method = 'delete';
       }
+      msg.url = url
+      msg.method = method
       axios({
         method,
         url,
@@ -106,7 +131,6 @@ module.exports = function (RED) {
           });
     })
 
-
     node.on('close', function () {
       node.status({});
     });
@@ -122,7 +146,7 @@ function setResponse(msg, res, node, nodeSend, nodeDone) {
   msg.statusCode = res.status;
   const body = res.data;
   msg.payload = {
-    success: body.success,
+    success: true,
     rawResponse: body,
   };
   node.status({});
