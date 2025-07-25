@@ -10,6 +10,13 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
     const node = this;
     node.on('input', function (msg, nodeSend, nodeDone) {
+      msg.table = {
+        id: msg.tableId,
+        item: msg.tableItem,
+        name: msg.tableName,
+        filter: msg.tableFilter,
+      };
+
       token = process?.env?.CORESERVICE_API_TOKEN;
       if (!CORESERVICE_API_HOST || !token || !userId || !appId) {
         node.error(RED._('platma-inbuilddb.errors.lack-envs'));
@@ -52,16 +59,16 @@ module.exports = function (RED) {
         const isTableItem =
           config.method === 'store' || config.method === 'change';
 
-        if (isTableIdNeeds && !msg.tableId) {
+        if (isTableIdNeeds && !tableId) {
           node.error(RED._('platma-inbuilddb.errors.no-tableId'));
           node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableId' });
           nodeDone();
           return;
         } else {
-          byTableId = msg?.tableId ? `?id=eq.${msg?.tableId}` : '';
+          byTableId = tableId ? `?id=eq.${tableId}` : '';
         }
 
-        if (isTableItem && !msg.tableItem) {
+        if (isTableItem && !tableItem) {
           node.error(RED._('platma-inbuilddb.errors.no-tableItem'));
           node.status({
             fill: 'red',
@@ -72,7 +79,7 @@ module.exports = function (RED) {
           return;
         }
 
-        if (config.method === 'getfiltered' && !msg.tableFilter) {
+        if (config.method === 'getfiltered' && !tableFilter) {
           node.error(RED._('platma-inbuilddb.errors.no-tableFilter'));
           node.status({
             fill: 'red',
@@ -82,7 +89,7 @@ module.exports = function (RED) {
           nodeDone();
           return;
         } else {
-          byFilter = msg.tableFilter || '';
+          byFilter = tableFilter || '';
         }
       } else {
         const isListFiltered = !!tableName && !tableItem && !tableIdToDel;
@@ -150,13 +157,13 @@ module.exports = function (RED) {
           userId,
           appId,
         },
-        data: { ...msg.tableItem },
+        data: { ...tableItem },
       })
         .then((res) => {
           setResponse(msg, res, node, nodeSend, nodeDone);
         })
         .catch((err) => {
-          catchError(err, node, msg, config, nodeSend, nodeDone);
+          catchError(err, node, msg, config, nodeSend, nodeDone, RED);
         });
     });
 
@@ -168,7 +175,9 @@ module.exports = function (RED) {
       node.status({});
     });
   }
-  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb);
+  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb, {
+    outputs: 2,
+  });
 };
 
 function setResponse(msg, res, node, nodeSend, nodeDone) {
@@ -179,11 +188,11 @@ function setResponse(msg, res, node, nodeSend, nodeDone) {
     rawResponse: body,
   };
   node.status({});
-  nodeSend(msg);
+  nodeSend([msg, null]);
   nodeDone();
 }
 
-function catchError(err, node, msg, config, nodeSend, nodeDone) {
+function catchError(err, node, msg, config, nodeSend, nodeDone, RED) {
   if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
     node.error(RED._('common.notification.errors.no-response'), msg);
     node.status({
@@ -200,7 +209,14 @@ function catchError(err, node, msg, config, nodeSend, nodeDone) {
     err.code || (err.response ? err.response.statusCode : undefined);
 
   if (!config.senderr) {
-    nodeSend(msg);
+    nodeSend([null, msg]);
+  } else {
+    node.error(err, msg);
+    console.error('platma-inbuilddb error:', err);
+    if (msg.res && typeof msg.res.status === 'function') {
+      msg.res.status(500).send('Internal Server Error');
+    }
+    return;
   }
   nodeDone();
 }

@@ -1,236 +1,313 @@
 <script type="text/javascript">
-    RED.nodes.registerType('platma-inbuilddb',{
-        category: 'function',
-        color: '#4f84e7',
-        defaults: {
-			tablename: { value: '' },
-			method: { value: 'getall' }
-        },
-        inputs:1,
-        outputs:1,
-        outputLabels: ["name", "method"],
-        icon: "white-globe.svg",
-		tablename: this.tablename,
-		method: this.method,
-        config: {tablename: this.tablename,
-			method: this.method,},
-        label: function () {
-            return this.name;
-        },
-    });
+  RED.nodes.registerType('platma-inbuilddb', {
+    category: 'function',
+    color: '#4f84e7',
+    defaults: {
+      tablename: { value: '' },
+      method: { value: 'getall' },
+    },
+    inputs: 1,
+    outputs: 2,
+    outputLabels: ['name', 'method'],
+    icon: 'white-globe.svg',
+    tablename: this.tablename,
+    method: this.method,
+    config: { tablename: this.tablename, method: this.method },
+    label: function () {
+      return this.name;
+    },
+  });
 </script>
 
 <script type="text/html" data-template-name="platma-inbuilddb">
-<div class='form-row'>
-    <label for="node-input-tablename"><i class="fa fa-table"></i>Table name</label>
-    <input type="text" id="node-input-tablename" placeholder="Table name"/>
-    <br>
+  <div class="form-row">
+    <label for="node-input-tablename"
+      ><i class="fa fa-table"></i>Table name</label
+    >
+    <input type="text" id="node-input-tablename" placeholder="Table name" />
+    <br />
     Also, you may want to set it with msg.tableName.
-</div>
-<div class="form-row">
+  </div>
+  <div class="form-row">
     <label for="node-input-method"><i class="fa fa-cog"></i>Operations</label>
     <select
-            id="node-input-method"
-            style="width: 50%;"
-            data-i18n="[placeholder]httpin.label.method"
+      id="node-input-method"
+      style="width: 50%;"
+      data-i18n="[placeholder]httpin.label.method"
     >
-        <option value="getall">Get all</option>
-        <option value="getone">Get one</option>
-        <option value="getfiltered">Get filtered</option>
-        <option value="store">Store</option>
-        <option value="change">Change</option>
-        <option value="delete">Delete</option>
+      <option value="getall">Get all</option>
+      <option value="getone">Get one</option>
+      <option value="getfiltered">Get filtered</option>
+      <option value="store">Store</option>
+      <option value="change">Change</option>
+      <option value="delete">Delete</option>
     </select>
-    <br>
-    Pay attention, if you use msg.tableName then an Operations will be predicted by existing data. See below.
-</div>
-<br>
-<hr>
-<div>
+    <br />
+    Pay attention, if you use msg.tableName then an Operations will be predicted
+    by existing data. See below.
+  </div>
+  <br />
+  <hr />
+  <div>
     <h3>List of arguments:</h3>
     <h4>All fields placed in the msg object</h4>
     <div class="wy-table-responsive">
-        <table class="docutils align-default">
-            <colgroup>
-                <col style="width: 6%">
-                <col style="width: 2%">
-                <col style="width: 92%">
-            </colgroup>
-            <thead>
-            <tr class="row-odd">
-                <th class="head"><p>Field</p></th>
-                <th class="head"><p></p></th>
-                <th class="head"><p>Meaning</p></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr class="row-even">
-                <td><b>tableName</b></td>
-                <td>-</td>
-                <td>The name of the table of the inbuilt db we use for operation.</td>
-            </tr>
-            <tr class="row-even">
-                <td><b>tableId</b></td>
-                <td>-</td>
-                <td>An id of a row of the table that should be deleted. Used for List and Update row operations.</td>
-            </tr>
-            <tr class="row-even">
-                <td><b>tableIdToDel</b></td>
-                <td>-</td>
-                <td>An id of a row of the table. Used for Delete row operations.</td>
-            </tr>
-            <tr class="row-even">
-                <td><b>tableItem</b></td>
-                <td>-</td>
-                <td>An object contains data that you want to use for Creating or Updating a row.</td>
-            </tr>
-            <tr class="row-even">
-                <td><b>tableFiler</b></td>
-                <td>-</td>
-                <td>A rules filtration string. It may content commands and fields with operators. See below</td>
-            </tr>
-            </tbody>
-        </table>
+      <table class="docutils align-default">
+        <colgroup>
+          <col style="width: 6%" />
+          <col style="width: 2%" />
+          <col style="width: 92%" />
+        </colgroup>
+        <thead>
+          <tr class="row-odd">
+            <th class="head"><p>Field</p></th>
+            <th class="head"><p></p></th>
+            <th class="head"><p>Meaning</p></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-even">
+            <td><b>tableName</b></td>
+            <td>-</td>
+            <td>
+              The name of the table of the inbuilt db we use for operation.
+            </td>
+          </tr>
+          <tr class="row-even">
+            <td><b>tableId</b></td>
+            <td>-</td>
+            <td>
+              An id of a row of the table that should be deleted. Used for List
+              and Update row operations.
+            </td>
+          </tr>
+          <tr class="row-even">
+            <td><b>tableIdToDel</b></td>
+            <td>-</td>
+            <td>
+              An id of a row of the table. Used for Delete row operations.
+            </td>
+          </tr>
+          <tr class="row-even">
+            <td><b>tableItem</b></td>
+            <td>-</td>
+            <td>
+              An object contains data that you want to use for Creating or
+              Updating a row.
+            </td>
+          </tr>
+          <tr class="row-even">
+            <td><b>tableFiler</b></td>
+            <td>-</td>
+            <td>
+              A rules filtration string. It may content commands and fields with
+              operators. See below
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
     <h3>List of filtering commands</h3>
     <div class="wy-table-responsive">
-        <table class="docutils align-default">
-            <colgroup>
-                <col style="width: 6%">
-                <col style="width: 2%">
-                <col style="width: 92%">
-            </colgroup>
-            <thead>
-            <tr class="row-odd">
-                <th class="head"><p>Command</p></th>
-                <th class="head"><p></p></th>
-                <th class="head"><p>Meaning</p></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr class="row-even">
-                <td><b>limit</b></td>
-                <td>-</td>
-                <td>Number of rows to get
-                    <br>For example <b><i>limit=10</i></b></td>
-            </tr>
-            <tr class="row-even">
-                <td><b>offset</b></td>
-                <td>-</td>
-                <td>Number of rows that will be skipped
-                    <br>For example <b><i>offset=100</i></b></td>
-            </tr>
-            <tr class="row-even">
-                <td><b>order</b></td>
-                <td>-</td>
-                <td>A separated with a symbol %2C list of fields name with a type of sorting.
-                    <br>For example <b><i>order=firstName.desc%2ClastName.asc</i></b></td>
-            </tr>
-            </tbody>
-        </table>
+      <table class="docutils align-default">
+        <colgroup>
+          <col style="width: 6%" />
+          <col style="width: 2%" />
+          <col style="width: 92%" />
+        </colgroup>
+        <thead>
+          <tr class="row-odd">
+            <th class="head"><p>Command</p></th>
+            <th class="head"><p></p></th>
+            <th class="head"><p>Meaning</p></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-even">
+            <td><b>limit</b></td>
+            <td>-</td>
+            <td>
+              Number of rows to get <br />For example <b><i>limit=10</i></b>
+            </td>
+          </tr>
+          <tr class="row-even">
+            <td><b>offset</b></td>
+            <td>-</td>
+            <td>
+              Number of rows that will be skipped <br />For example
+              <b><i>offset=100</i></b>
+            </td>
+          </tr>
+          <tr class="row-even">
+            <td><b>order</b></td>
+            <td>-</td>
+            <td>
+              A separated with a symbol %2C list of fields name with a type of
+              sorting. <br />For example
+              <b><i>order=firstName.desc%2ClastName.asc</i></b>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <div class="section" id="operators">
-        <h3>List of filtering operators</h3>
-        <div class="wy-table-responsive">
-            <table class="docutils align-default">
-                <colgroup>
-                    <col style="width: 6%">
-                    <col style="width: 2%">
-                    <col style="width: 92%">
-                </colgroup>
-                <thead>
-                <tr class="row-odd">
-                    <th class="head"><p>Operator</p></th>
-                    <th class="head"><p></p></th>
-                    <th class="head"><p>Meaning</p></th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr class="row-even">
-                    <td><b>eq</b></td>
-                    <td>-</td>
-                    <td><p>equals</p></td>
-                </tr>
-                <tr class="row-odd">
-                    <td><b>gt</b></td>
-                    <td>-</td>
-                    <td><p>greater than</p></td>
-                </tr>
-                <tr class="row-even">
-                    <td><b>qte</b></td>
-                    <td>-</td>
-                    <td><p>greater than or equal</p></td>
-                </tr>
-                <tr class="row-odd">
-                    <td><b>lt</b></td>
-                    <td>-</td>
-                    <td><p>less than</p></td>
-                </tr>
-                <tr class="row-even">
-                    <td><b>lte</b></td>
-                    <td>-</td>
-                    <td><p>less than or equal</p></td>
-                </tr>
-                <tr class="row-odd">
-                    <td><b>neq</b></td>
-                    <td>-</td>
-                    <td><p>not equal</p></td>
-                </tr>
-                <tr class="row-even">
-                    <td><b>like</b></td>
-                    <td>-</td>
-                    <td><p>LIKE operator (to avoid <a class="reference external"
-                                                      href="https://en.wikipedia.org/wiki/Percent-encoding">URL
-                        encoding</a> you can use <code class="docutils literal notranslate"><span
-                            class="pre">*</span></code> as an alias of the percent sign <code
-                            class="docutils literal notranslate"><span class="pre">%</span></code> for the pattern)</p>
-                    </td>
-                </tr>
-                <tr class="row-odd">
-                    <td><b>ilike</b></td>
-                    <td>-</td>
-                    <td><p>ILIKE operator (to avoid <a class="reference external"
-                                                       href="https://en.wikipedia.org/wiki/Percent-encoding">URL
-                        encoding</a> you can use <code class="docutils literal notranslate"><span
-                            class="pre">*</span></code> as an alias of the percent sign <code
-                            class="docutils literal notranslate"><span class="pre">%</span></code> for the pattern)</p>
-                    </td>
-                </tr>
-                <tr class="row-even">
-                    <td><b>match</b></td>
-                    <td>-</td>
-                    <td><p>~ operator, see <a class="reference internal" href="https://www.postgresql.org/docs/current/functions-matching.html"><span
-                            class="std std-ref">Pattern Matching</span></a></p></td>
-                </tr>
-                <tr class="row-odd">
-                    <td><b>imatch</b></td>
-                    <td>-</td>
-                    <td><p>~* operator, see <a class="reference internal" href="https://www.postgresql.org/docs/current/functions-matching.html"><span
-                            class="std std-ref">Pattern Matching</span></a></p></td>
-                </tr>
-                <tr class="row-even">
-                    <td><b>in</b></td>
-                    <td>-</td>
-                    <td><p>one of a list of values, e.g. <code class="code docutils literal notranslate"><span
-                            class="pre">?a=in.(1,2,3)</span></code>
-                        – also supports commas in quoted strings like
-                        <code class="code docutils literal notranslate"><span
-                                class="pre">?a=in.("hi,there","yes,you")</span></code></p></td>
-                </tr>
-                <tr class="row-odd">
-                    <td><b>is</b></td>
-                    <td>-</td>
-                    <td><p>checking for exact equality (null,true,false,unknown)</p></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <br>For example <b><i>year=eq.2020&month=gt.5&name=like.John&item=in("bread","mils")</i></b>
+      <h3>List of filtering operators</h3>
+      <div class="wy-table-responsive">
+        <table class="docutils align-default">
+          <colgroup>
+            <col style="width: 6%" />
+            <col style="width: 2%" />
+            <col style="width: 92%" />
+          </colgroup>
+          <thead>
+            <tr class="row-odd">
+              <th class="head"><p>Operator</p></th>
+              <th class="head"><p></p></th>
+              <th class="head"><p>Meaning</p></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-even">
+              <td><b>eq</b></td>
+              <td>-</td>
+              <td><p>equals</p></td>
+            </tr>
+            <tr class="row-odd">
+              <td><b>gt</b></td>
+              <td>-</td>
+              <td><p>greater than</p></td>
+            </tr>
+            <tr class="row-even">
+              <td><b>qte</b></td>
+              <td>-</td>
+              <td><p>greater than or equal</p></td>
+            </tr>
+            <tr class="row-odd">
+              <td><b>lt</b></td>
+              <td>-</td>
+              <td><p>less than</p></td>
+            </tr>
+            <tr class="row-even">
+              <td><b>lte</b></td>
+              <td>-</td>
+              <td><p>less than or equal</p></td>
+            </tr>
+            <tr class="row-odd">
+              <td><b>neq</b></td>
+              <td>-</td>
+              <td><p>not equal</p></td>
+            </tr>
+            <tr class="row-even">
+              <td><b>like</b></td>
+              <td>-</td>
+              <td>
+                <p>
+                  LIKE operator (to avoid
+                  <a
+                    class="reference external"
+                    href="https://en.wikipedia.org/wiki/Percent-encoding"
+                    >URL encoding</a
+                  >
+                  you can use
+                  <code class="docutils literal notranslate"
+                    ><span class="pre">*</span></code
+                  >
+                  as an alias of the percent sign
+                  <code class="docutils literal notranslate"
+                    ><span class="pre">%</span></code
+                  >
+                  for the pattern)
+                </p>
+              </td>
+            </tr>
+            <tr class="row-odd">
+              <td><b>ilike</b></td>
+              <td>-</td>
+              <td>
+                <p>
+                  ILIKE operator (to avoid
+                  <a
+                    class="reference external"
+                    href="https://en.wikipedia.org/wiki/Percent-encoding"
+                    >URL encoding</a
+                  >
+                  you can use
+                  <code class="docutils literal notranslate"
+                    ><span class="pre">*</span></code
+                  >
+                  as an alias of the percent sign
+                  <code class="docutils literal notranslate"
+                    ><span class="pre">%</span></code
+                  >
+                  for the pattern)
+                </p>
+              </td>
+            </tr>
+            <tr class="row-even">
+              <td><b>match</b></td>
+              <td>-</td>
+              <td>
+                <p>
+                  ~ operator, see
+                  <a
+                    class="reference internal"
+                    href="https://www.postgresql.org/docs/current/functions-matching.html"
+                    ><span class="std std-ref">Pattern Matching</span></a
+                  >
+                </p>
+              </td>
+            </tr>
+            <tr class="row-odd">
+              <td><b>imatch</b></td>
+              <td>-</td>
+              <td>
+                <p>
+                  ~* operator, see
+                  <a
+                    class="reference internal"
+                    href="https://www.postgresql.org/docs/current/functions-matching.html"
+                    ><span class="std std-ref">Pattern Matching</span></a
+                  >
+                </p>
+              </td>
+            </tr>
+            <tr class="row-even">
+              <td><b>in</b></td>
+              <td>-</td>
+              <td>
+                <p>
+                  one of a list of values, e.g.
+                  <code class="code docutils literal notranslate"
+                    ><span class="pre">?a=in.(1,2,3)</span></code
+                  >
+                  – also supports commas in quoted strings like
+                  <code class="code docutils literal notranslate"
+                    ><span class="pre">?a=in.("hi,there","yes,you")</span></code
+                  >
+                </p>
+              </td>
+            </tr>
+            <tr class="row-odd">
+              <td><b>is</b></td>
+              <td>-</td>
+              <td>
+                <p>checking for exact equality (null,true,false,unknown)</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <br />For example
+      <b
+        ><i
+          >year=eq.2020&month=gt.5&name=like.John&item=in("bread","mils")</i
+        ></b
+      >
     </div>
-</div>
+  </div>
 </script>
 <script type="text/html" data-help-name="platma-inbuilddb">
-    <p>A node for receiving personal information of the Platma user.</p>
-    <p>It returns info about a Platma user who initiates an HTTP request.</p>
+  <p>A node for receiving personal information of the Platma user.</p>
+  <p>It returns info about a Platma user who initiates an HTTP request.</p>
 </script>

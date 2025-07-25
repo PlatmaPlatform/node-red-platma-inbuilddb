@@ -10,7 +10,7 @@
   "keywords": [
     "node-red",
     "platma",
-	"inbuilddb"
+    "inbuilddb"
   ],
   "homepage": "https://github.com/PlatmaC/node-red-platma-inbuilddb",
   "repository": {
