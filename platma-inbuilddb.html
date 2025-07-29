@@ -7,7 +7,7 @@
       method: { value: 'getall' },
     },
     inputs: 1,
-    outputs: 2,
+    outputs: 1,
     outputLabels: ['name', 'method'],
     icon: 'white-globe.svg',
     tablename: this.tablename,
@@ -40,7 +40,9 @@
       <option value="getfiltered">Get filtered</option>
       <option value="store">Store</option>
       <option value="change">Change</option>
+      <option value="changefiltered">Change filtered</option>
       <option value="delete">Delete</option>
+      <option value="deletefiltered">Delete filtered</option>
     </select>
     <br />
     Pay attention, if you use msg.tableName then an Operations will be predicted

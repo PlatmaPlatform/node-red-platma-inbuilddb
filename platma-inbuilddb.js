@@ -10,13 +10,6 @@ module.exports = function (RED) {
     RED.nodes.createNode(this, config);
     const node = this;
     node.on('input', function (msg, nodeSend, nodeDone) {
-      msg.table = {
-        id: msg.tableId,
-        item: msg.tableItem,
-        name: msg.tableName,
-        filter: msg.tableFilter,
-      };
-
       token = process?.env?.CORESERVICE_API_TOKEN;
       if (!CORESERVICE_API_HOST || !token || !userId || !appId) {
         node.error(RED._('platma-inbuilddb.errors.lack-envs'));
@@ -36,7 +29,11 @@ module.exports = function (RED) {
       });
 
       let operation, byTableId, byFilter;
-      let { tableName, tableId, tableIdToDel, tableItem, tableFilter } = msg;
+      let tableName = msg.table.name ?? msg.tableName;
+      let tableId = msg.table.id ?? msg.tableId;
+      let tableItem = msg.table.item ?? msg.tableItem;
+      let tableFilter = msg.table.filter ?? msg.tableFilter;
+      let tableIdToDel = msg.tableIdToDel;
 
       if (!config.tablename && !tableName) {
         node.error(RED._('platma-inbuilddb.errors.no-configured'));
@@ -57,7 +54,9 @@ module.exports = function (RED) {
           config.method === 'change' ||
           config.method === 'delete';
         const isTableItem =
-          config.method === 'store' || config.method === 'change';
+          config.method === 'store' ||
+          config.method === 'change' ||
+          config.method === 'changefiltered';
 
         if (isTableIdNeeds && !tableId) {
           node.error(RED._('platma-inbuilddb.errors.no-tableId'));
@@ -79,7 +78,12 @@ module.exports = function (RED) {
           return;
         }
 
-        if (config.method === 'getfiltered' && !tableFilter) {
+        if (
+          ['getfiltered', 'changefiltered', 'deletefiltered'].includes(
+            config.method,
+          ) &&
+          !tableFilter
+        ) {
           node.error(RED._('platma-inbuilddb.errors.no-tableFilter'));
           node.status({
             fill: 'red',
@@ -142,9 +146,13 @@ module.exports = function (RED) {
         method = 'get';
       } else if (operation === 'store' || operation === 'create') {
         method = 'post';
-      } else if (operation === 'change' || operation === 'update') {
+      } else if (
+        operation === 'change' ||
+        operation === 'update' ||
+        operation === 'changefiltered'
+      ) {
         method = 'put';
-      } else if (operation === 'delete') {
+      } else if (operation === 'delete' || operation === 'deletefiltered') {
         method = 'delete';
       }
       msg.url = url;
@@ -175,9 +183,7 @@ module.exports = function (RED) {
       node.status({});
     });
   }
-  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb, {
-    outputs: 2,
-  });
+  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb);
 };
 
 function setResponse(msg, res, node, nodeSend, nodeDone) {
@@ -209,7 +215,7 @@ function catchError(err, node, msg, config, nodeSend, nodeDone, RED) {
     err.code || (err.response ? err.response.statusCode : undefined);
 
   if (!config.senderr) {
-    nodeSend([null, msg]);
+    nodeSend(msg);
   } else {
     node.error(err, msg);
     console.error('platma-inbuilddb error:', err);
