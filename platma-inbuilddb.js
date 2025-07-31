@@ -194,7 +194,7 @@ function setResponse(msg, res, node, nodeSend, nodeDone) {
     rawResponse: body,
   };
   node.status({});
-  nodeSend([msg, null]);
+  nodeSend(msg);
   nodeDone();
 }
 
@@ -215,7 +215,7 @@ function catchError(err, node, msg, config, nodeSend, nodeDone, RED) {
     err.code || (err.response ? err.response.statusCode : undefined);
 
   if (!config.senderr) {
-    nodeSend(msg);
+    nodeSend([null, msg]);
   } else {
     node.error(err, msg);
     console.error('platma-inbuilddb error:', err);
