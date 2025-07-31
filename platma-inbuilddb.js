@@ -5,8 +5,10 @@ module.exports = function (RED) {
   let token = process?.env?.CORESERVICE_API_TOKEN;
   const userId = parseInt(process?.env?.USER_ID);
   const appId = parseInt(process?.env?.APP_ID);
+  let senderr = true;
 
   function PlatmaInbuildDb(config) {
+    senderr = config.senderr;
     RED.nodes.createNode(this, config);
     const node = this;
     node.on('input', function (msg, nodeSend, nodeDone) {
@@ -183,7 +185,9 @@ module.exports = function (RED) {
       node.status({});
     });
   }
-  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb);
+  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb, {
+    outputs: senderr ? 2 : 1,
+  });
 };
 
 function setResponse(msg, res, node, nodeSend, nodeDone) {
@@ -214,7 +218,7 @@ function catchError(err, node, msg, config, nodeSend, nodeDone, RED) {
   msg.statusCode =
     err.code || (err.response ? err.response.statusCode : undefined);
 
-  if (!config.senderr) {
+  if (config.senderr) {
     nodeSend([null, msg]);
   } else {
     node.error(err, msg);

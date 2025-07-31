@@ -5,14 +5,15 @@
     defaults: {
       tablename: { value: '' },
       method: { value: 'getall' },
+      senderr: { value: true },
     },
     inputs: 1,
     outputs: 1,
-    outputLabels: ['name', 'method'],
+    outputLabels: ['name', 'method', 'senderr'],
     icon: 'white-globe.svg',
     tablename: this.tablename,
     method: this.method,
-    config: { tablename: this.tablename, method: this.method },
+    config: { tablename: this.tablename, method: this.method, senderr: this.senderr },
     label: function () {
       return this.name;
     },
@@ -47,6 +48,15 @@
     <br />
     Pay attention, if you use msg.tableName then an Operations will be predicted
     by existing data. See below.
+  </div>
+  <div class="form-row">
+    <label for="node-input-senderr" style="display: flex; align-items: center; gap: 6px; color: #b30000; font-weight: 500;">
+    <input type="checkbox" id="node-input-senderr" 
+           style="accent-color: rgb(164, 35, 3); width: 16px; height: 16px; cursor: pointer;" />
+    <i class="fa fa-exclamation-triangle" style="font-size: 16px;"></i>
+    Handle Error Manually
+    </label>
+    This setting adds a second output for handling errors when enabled; otherwise, it stops the process when error happen.
   </div>
   <br />
   <hr />
@@ -104,6 +114,13 @@
             <td>
               A rules filtration string. It may content commands and fields with
               operators. See below
+            </td>
+          </tr>
+          <tr class="row-even">
+            <td><b>table</b></td>
+            <td>-</td>
+            <td>
+              An object containing the fields {id, name, item, filter} which are the same as those previously described in the documentation 
             </td>
           </tr>
         </tbody>
@@ -208,6 +225,7 @@
                   LIKE operator (to avoid
                   <a
                     class="reference external"
+                    style="color: rgb(164, 35, 3); text-decoration: underline;"
                     href="https://en.wikipedia.org/wiki/Percent-encoding"
                     >URL encoding</a
                   >
@@ -231,6 +249,7 @@
                   ILIKE operator (to avoid
                   <a
                     class="reference external"
+                    style="color: rgb(164, 35, 3); text-decoration: underline;"
                     href="https://en.wikipedia.org/wiki/Percent-encoding"
                     >URL encoding</a
                   >
@@ -254,6 +273,7 @@
                   ~ operator, see
                   <a
                     class="reference internal"
+                    style="color: rgb(164, 35, 3); text-decoration: underline;"
                     href="https://www.postgresql.org/docs/current/functions-matching.html"
                     ><span class="std std-ref">Pattern Matching</span></a
                   >
@@ -268,6 +288,7 @@
                   ~* operator, see
                   <a
                     class="reference internal"
+                    style="color: rgb(164, 35, 3); text-decoration: underline;"
                     href="https://www.postgresql.org/docs/current/functions-matching.html"
                     ><span class="std std-ref">Pattern Matching</span></a
                   >
@@ -303,7 +324,7 @@
       <br />For example
       <b
         ><i
-          >year=eq.2020&month=gt.5&name=like.John&item=in("bread","mils")</i
+          >?year=eq.2020&month=gt.5&name=like.*John*&item=in.(bread,mils)</i
         ></b
       >
     </div>
