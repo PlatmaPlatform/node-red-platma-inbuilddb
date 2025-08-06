@@ -31,10 +31,10 @@ module.exports = function (RED) {
       });
 
       let operation, byTableId, byFilter;
-      let tableName = msg.table.name ?? msg.tableName;
-      let tableId = msg.table.id ?? msg.tableId;
-      let tableItem = msg.table.item ?? msg.tableItem;
-      let tableFilter = msg.table.filter ?? msg.tableFilter;
+      let tableName = msg.table?.name ?? msg.tableName ?? null;
+      let tableId = msg.table?.id ?? msg.tableId ?? null;
+      let tableItem = msg.table?.item ?? msg.tableItem ?? null;
+      let tableFilter = msg.table?.filter ?? msg.tableFilter ?? null;
       let tableIdToDel = msg.tableIdToDel;
 
       if (!config.tablename && !tableName) {
