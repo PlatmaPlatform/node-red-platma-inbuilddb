@@ -48,7 +48,7 @@ module.exports = function (RED) {
         return;
       }
 
-      if (config.tablename && config.method) {
+      if ((config.tablename || tableName) && config.method) {
         operation = config.method;
 
         const isTableIdNeeds =
