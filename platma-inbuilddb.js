@@ -60,6 +60,10 @@ module.exports = function (RED) {
           config.method === 'change' ||
           config.method === 'changefiltered';
 
+        if (config.method==="delete") {
+          tableId = tableIdToDel
+        }
+
         if (isTableIdNeeds && !tableId) {
           node.error(RED._('platma-inbuilddb.errors.no-tableId'));
           node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableId' });
