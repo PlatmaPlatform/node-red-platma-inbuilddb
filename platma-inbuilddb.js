@@ -60,8 +60,8 @@ module.exports = function (RED) {
           config.method === 'change' ||
           config.method === 'changefiltered';
 
-        if (config.method==="delete") {
-          tableId = tableIdToDel
+        if (config.method === 'delete') {
+          tableId = tableIdToDel;
         }
 
         if (isTableIdNeeds && !tableId) {
@@ -226,7 +226,6 @@ function catchError(err, node, msg, config, nodeSend, nodeDone, RED) {
     nodeSend([null, msg]);
   } else {
     node.error(err, msg);
-    console.error('platma-inbuilddb error:', err);
     if (msg.res && typeof msg.res.status === 'function') {
       msg.res.status(500).send('Internal Server Error');
     }

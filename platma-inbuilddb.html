@@ -8,8 +8,8 @@
       senderr: { value: true },
     },
     inputs: 1,
-    outputs: 1,
-    outputLabels: ['name', 'method', 'senderr'],
+    outputs: 2,
+    outputLabels: ['Main flow', 'Error flow'],
     icon: 'white-globe.svg',
     tablename: this.tablename,
     method: this.method,
@@ -17,6 +17,17 @@
     label: function () {
       return this.name;
     },
+    oneditprepare: function() {
+        let node = this;
+        $("#node-input-senderr").on("change", function() {
+            node.senderr = $(this).is(":checked");
+            node.outputs = node.senderr ? 2 : 1;
+            RED.view.redraw(true);
+        });
+    },
+    oneditsave: function() {
+        this.outputs = this.senderr ? 2 : 1;
+    }
   });
 </script>
 
@@ -51,9 +62,10 @@
   </div>
   <div class="form-row">
     <label for="node-input-senderr" style="display: flex; align-items: center; gap: 6px; color: #b30000; font-weight: 500;">
+    <i class="fa fa-exclamation-triangle" style="font-size: 16px;"></i>
     <input type="checkbox" id="node-input-senderr" 
            style="accent-color: rgb(164, 35, 3); width: 16px; height: 16px; cursor: pointer;" />
-    <i class="fa fa-exclamation-triangle" style="font-size: 16px;"></i>
+    
     Handle Error Manually
     </label>
     This setting adds a second output for handling errors when enabled; otherwise, it stops the process when error happen.
