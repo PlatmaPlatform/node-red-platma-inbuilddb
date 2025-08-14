@@ -19,13 +19,24 @@
     },
     oneditprepare: function() {
         let node = this;
+
+        function updateOutputsUI() {
+            let isChecked = $("#node-input-senderr").is(":checked");
+            node.outputs = isChecked ? 2 : 1;
+            RED.view.redraw(true); 
+        }
+
+        $("#node-input-senderr").prop("checked", node.senderr);
+        updateOutputsUI();
+
         $("#node-input-senderr").on("change", function() {
-            node.senderr = $(this).is(":checked");
-            node.outputs = node.senderr ? 2 : 1;
-            RED.view.redraw(true);
+            updateOutputsUI();
+            RED.nodes.dirty(true);
         });
     },
+
     oneditsave: function() {
+        this.senderr = $("#node-input-senderr").is(":checked");
         this.outputs = this.senderr ? 2 : 1;
     }
   });

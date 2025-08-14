@@ -189,9 +189,7 @@ module.exports = function (RED) {
       node.status({});
     });
   }
-  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb, {
-    outputs: senderr ? 2 : 1,
-  });
+  RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb);
 };
 
 function setResponse(msg, res, node, nodeSend, nodeDone) {
