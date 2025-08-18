@@ -13,32 +13,36 @@
     icon: 'white-globe.svg',
     tablename: this.tablename,
     method: this.method,
-    config: { tablename: this.tablename, method: this.method, senderr: this.senderr },
+    config: {
+      tablename: this.tablename,
+      method: this.method,
+      senderr: this.senderr,
+    },
     label: function () {
       return this.name;
     },
-    oneditprepare: function() {
-        let node = this;
+    oneditprepare: function () {
+      let node = this;
 
-        function updateOutputsUI() {
-            let isChecked = $("#node-input-senderr").is(":checked");
-            node.outputs = isChecked ? 2 : 1;
-            RED.view.redraw(true); 
-        }
+      function updateOutputsUI() {
+        let isChecked = $('#node-input-senderr').is(':checked');
+        node.outputs = isChecked ? 2 : 1;
+        RED.view.redraw(true);
+      }
 
-        $("#node-input-senderr").prop("checked", node.senderr);
+      $('#node-input-senderr').prop('checked', node.senderr);
+      updateOutputsUI();
+
+      $('#node-input-senderr').on('change', function () {
         updateOutputsUI();
-
-        $("#node-input-senderr").on("change", function() {
-            updateOutputsUI();
-            RED.nodes.dirty(true);
-        });
+        RED.nodes.dirty(true);
+      });
     },
 
-    oneditsave: function() {
-        this.senderr = $("#node-input-senderr").is(":checked");
-        this.outputs = this.senderr ? 2 : 1;
-    }
+    oneditsave: function () {
+      this.senderr = $('#node-input-senderr').is(':checked');
+      this.outputs = this.senderr ? 2 : 1;
+    },
   });
 </script>
 
@@ -61,7 +65,8 @@
       <option value="getall">Get all</option>
       <option value="getone">Get one</option>
       <option value="getfiltered">Get filtered</option>
-      <option value="store">Store</option>
+      <option value="store">Store one</option>
+      <option value="storemany">Store many</option>
       <option value="change">Change</option>
       <option value="changefiltered">Change filtered</option>
       <option value="delete">Delete</option>
@@ -72,14 +77,21 @@
     by existing data. See below.
   </div>
   <div class="form-row">
-    <label for="node-input-senderr" style="display: flex; align-items: center; gap: 6px; color: #b30000; font-weight: 500;">
-    <i class="fa fa-exclamation-triangle" style="font-size: 16px;"></i>
-    <input type="checkbox" id="node-input-senderr" 
-           style="accent-color: rgb(164, 35, 3); width: 16px; height: 16px; cursor: pointer;" />
-    
-    Handle Error Manually
+    <label
+      for="node-input-senderr"
+      style="display: flex; align-items: center; gap: 6px; color: #b30000; font-weight: 500;"
+    >
+      <i class="fa fa-exclamation-triangle" style="font-size: 16px;"></i>
+      <input
+        type="checkbox"
+        id="node-input-senderr"
+        style="accent-color: rgb(164, 35, 3); width: 16px; height: 16px; cursor: pointer;"
+      />
+
+      Handle Error Manually
     </label>
-    This setting adds a second output for handling errors when enabled; otherwise, it stops the process when error happen.
+    This setting adds a second output for handling errors when enabled;
+    otherwise, it stops the process when error happen.
   </div>
   <br />
   <hr />
@@ -132,6 +144,14 @@
             </td>
           </tr>
           <tr class="row-even">
+            <td><b>tableItems</b></td>
+            <td>-</td>
+            <td>
+              This array should contain objects representing the data you want
+              to use for Creating or Updating multiple rows.
+            </td>
+          </tr>
+          <tr class="row-even">
             <td><b>tableFiler</b></td>
             <td>-</td>
             <td>
@@ -143,7 +163,9 @@
             <td><b>table</b></td>
             <td>-</td>
             <td>
-              An object containing the fields {id, name, item, filter} which are the same as those previously described in the documentation 
+              An object containing the fields {id, name, item, items, filter}
+              which are the same as those previously described in the
+              documentation
             </td>
           </tr>
         </tbody>

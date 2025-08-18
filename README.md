@@ -10,7 +10,7 @@ This package provides a one node.
 
 ### Configuration node
 
-Configuration is necessary for this node. Please input a Table name, choice a kind of DB request and the rest needs data. 
+Configuration is necessary for this node. Please input a Table name, choice a kind of DB request and the rest needs data.
 
 ## More documentation
 
