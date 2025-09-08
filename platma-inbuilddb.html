@@ -24,6 +24,33 @@
     oneditprepare: function () {
       let node = this;
 
+      function getTableList() {
+        let datalist = $('#tables-list');
+        datalist.empty();
+        datalist.append('<option value="Loading...">');
+
+        $.ajax({
+          url: '/platma-inbuilddb/tables',
+          method: 'GET',
+          success: function (response) {
+            datalist.empty();
+            let tables =
+              response.data && Array.isArray(response.data.tables_list)
+                ? response.data.tables_list
+                : [];
+
+            if (tables.length) {
+              tables.forEach(function (table) {
+                datalist.append('<option value="' + table.table_name + '">');
+              });
+            }
+          },
+          error: function () {
+            datalist.empty();
+          },
+        });
+      }
+
       function updateOutputsUI() {
         let isChecked = $('#node-input-senderr').is(':checked');
         node.outputs = isChecked ? 2 : 1;
@@ -37,6 +64,8 @@
         updateOutputsUI();
         RED.nodes.dirty(true);
       });
+
+      getTableList();
     },
 
     oneditsave: function () {
@@ -51,7 +80,15 @@
     <label for="node-input-tablename"
       ><i class="fa fa-table"></i>Table name</label
     >
-    <input type="text" id="node-input-tablename" placeholder="Table name" />
+    <input
+      list="tables-list"
+      id="node-input-tablename"
+      placeholder="Table name"
+    />
+    <datalist id="tables-list">
+      <option value="Loading..."></option>
+    </datalist>
+
     <br />
     Also, you may want to set it with msg.tableName.
   </div>

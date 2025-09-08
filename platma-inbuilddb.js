@@ -250,6 +250,30 @@ module.exports = function (RED) {
       node.status({});
     });
   }
+
+  RED.httpAdmin.get('/platma-inbuilddb/tables', async function (req, res) {
+    let headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      userid: userId,
+      appid: appId,
+    };
+
+    try {
+      const response = await axios.post(
+        `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red-request`,
+        {
+          get: { tables: 'all' },
+        },
+        { headers: headers },
+      );
+
+      res.json({ tables: response.data.tables || [] });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb);
 };
 
