@@ -25,29 +25,50 @@
       let node = this;
 
       function getTableList() {
-        let datalist = $('#tables-list');
-        datalist.empty();
-        datalist.append('<option value="Loading...">');
+        const $select = $('#node-input-tablename');
+        const previousValue = node.tablename;
+        if (!$select.length) {
+          console.error('Select not found!');
+          return;
+        }
 
-        $.ajax({
-          url: '/platma-inbuilddb/tables',
-          method: 'GET',
-          success: function (response) {
-            datalist.empty();
-            let tables =
-              response.data && Array.isArray(response.data.tables_list)
-                ? response.data.tables_list
-                : [];
+        $select.empty().append('<option>Loading...</option>');
 
-            if (tables.length) {
-              tables.forEach(function (table) {
-                datalist.append('<option value="' + table.table_name + '">');
-              });
+        $.getJSON('/platma-inbuilddb/tables', function (response) {
+          const tables = Array.isArray(response.tables) ? response.tables : [];
+          $select.empty();
+          $select.append('<option value=""></option>');
+
+          if (tables.length) {
+            tables.forEach((t) =>
+              $select.append(
+                '<option value="' +
+                  t.table_name +
+                  '">' +
+                  t.table_name +
+                  '</option>',
+              ),
+            );
+          } else {
+            $select.append('<option disabled>No tables available</option>');
+          }
+
+          if (previousValue) {
+            if (
+              $select.find("option[value='" + previousValue + "']").length > 0
+            ) {
+              $select.val(previousValue);
+            } else {
+              $select.append(
+                '<option value="' +
+                  previousValue +
+                  '">' +
+                  previousValue +
+                  ' not found</option>',
+              );
+              $select.val(previousValue);
             }
-          },
-          error: function () {
-            datalist.empty();
-          },
+          }
         });
       }
 
@@ -80,14 +101,9 @@
     <label for="node-input-tablename"
       ><i class="fa fa-table"></i>Table name</label
     >
-    <input
-      list="tables-list"
-      id="node-input-tablename"
-      placeholder="Table name"
-    />
-    <datalist id="tables-list">
-      <option value="Loading..."></option>
-    </datalist>
+    <select id="node-input-tablename" style="width: 50%;">
+      <option>Loading...</option>
+    </select>
 
     <br />
     Also, you may want to set it with msg.tableName.

@@ -252,23 +252,26 @@ module.exports = function (RED) {
   }
 
   RED.httpAdmin.get('/platma-inbuilddb/tables', async function (req, res) {
+    token = process?.env?.CORESERVICE_API_TOKEN;
+
     let headers = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      authorization: `Bearer ${token}`,
       userid: userId,
       appid: appId,
+    };
+
+    let body = {
+      get: { tables: 'all' },
     };
 
     try {
       const response = await axios.post(
         `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red-request`,
-        {
-          get: { tables: 'all' },
-        },
+        body,
         { headers: headers },
       );
 
-      res.json({ tables: response.data.tables || [] });
+      res.json({ tables: response.data.data.tables || [] });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
