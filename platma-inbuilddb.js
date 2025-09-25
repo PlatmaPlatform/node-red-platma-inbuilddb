@@ -1,5 +1,4 @@
 const FormData = require('form-data');
-
 function toCSV(data) {
   if (!data.length) return '';
   const headers = Object.keys(data[0]);
@@ -7,12 +6,93 @@ function toCSV(data) {
   return [headers.join(','), ...rows].join('\n');
 }
 
+function formatOrder(o) {
+  return `${encodeURIComponent(o.column)}.${o.direction}`;
+}
+
+const substituteValue = {
+  'is null': 'null',
+  'is true': 'true',
+  'is false': 'false',
+  'is unknown': 'unknown',
+};
+
+function formatFilter(f) {
+  if (!f.operator) return '';
+  let val = f.value;
+  if (f.operator in substituteValue) {
+    val = substituteValue[f.operator];
+    f.operator = 'is';
+  }
+  if (Array.isArray(val)) val = `(${val.join(',')})`;
+  return `${encodeURIComponent(f.column)}=${f.operator}.${encodeURIComponent(
+    val,
+  )}`;
+}
+
+function constructFilter(filters, limit, offset, orders) {
+  let params = [];
+
+  if (filters?.length) {
+    filters.forEach((f) => {
+      const filterStr = formatFilter(f);
+      if (filterStr) params.push(filterStr);
+    });
+  }
+
+  if (orders?.length) {
+    const orderStr = orders.map(formatOrder).join('%2C');
+    if (orderStr && orderStr !== '.asc' && orderStr !== '.desc')
+      params.push(`order=${orderStr}`);
+  }
+
+  if (limit) params.push(`limit=${limit}`);
+  if (offset) params.push(`offset=${offset}`);
+
+  return params.join('&');
+}
+
+const isEmpty = (v) =>
+  v == null ||
+  (Array.isArray(v) && v.length === 0) ||
+  (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0);
+
 module.exports = function (RED) {
   const axios = require('axios');
   const CORESERVICE_API_HOST = process?.env?.CORESERVICE_API_HOST;
   let token = process?.env?.CORESERVICE_API_TOKEN;
   const userId = parseInt(process?.env?.USER_ID);
   const appId = parseInt(process?.env?.APP_ID);
+
+  function resolveTypedInputSync(typedInput, msg, node) {
+    if (!typedInput) return undefined;
+
+    const { type, value } = typedInput;
+
+    switch (type) {
+      case 'num':
+        return Number(value);
+      case 'str':
+        return String(value);
+      case 'json':
+        try {
+          return JSON.parse(value);
+        } catch (e) {
+          return value;
+        }
+      case 'msg':
+        return msg[value];
+      case 'flow':
+        return node.context().flow?.get(value);
+      case 'global':
+        return node.context().global?.get(value);
+      case 'env':
+        return process.env[value] || null;
+      case 'jsonata':
+      default:
+        return value;
+    }
+  }
 
   function PlatmaInbuildDb(config) {
     RED.nodes.createNode(this, config);
@@ -36,14 +116,71 @@ module.exports = function (RED) {
         text: 'platma-inbuilddb.status.requesting',
       });
 
+      let rawId = config.rawId
+        ? resolveTypedInputSync(config.rawId, msg, node)
+        : null;
+      let item =
+        config.item && !isEmpty(config.item)
+          ? resolveTypedInputSync(config.item, msg, node)
+          : null;
+      let items =
+        config.items && !isEmpty(config.items)
+          ? resolveTypedInputSync(config.items, msg, node)
+          : null;
+      let idForDel = config.idForDel
+        ? resolveTypedInputSync(config.idForDel, msg, node)
+        : null;
+
+      let filter =
+        (config.filter ?? []).length > 0
+          ? '?' +
+            constructFilter(
+              config.filter.map((item) => {
+                return {
+                  column: resolveTypedInputSync(
+                    { value: item.column, type: item.columnType },
+                    msg,
+                    node,
+                  ),
+                  operator: item.operator,
+                  value: resolveTypedInputSync(
+                    { value: item.value, type: item.type },
+                    msg,
+                    node,
+                  ),
+                };
+              }),
+              resolveTypedInputSync(config.limit, msg, node),
+              resolveTypedInputSync(config.offset, msg, node),
+              config.order.map((item) => {
+                return {
+                  column: resolveTypedInputSync(
+                    { value: item.column, type: item.columnType },
+                    msg,
+                    node,
+                  ),
+                  direction: item.direction,
+                };
+              }),
+            )
+          : null;
+
       let operation, byTableId, byFilter;
       let tableName =
         msg.table?.name ?? msg.tableName ?? config.tablename ?? null;
-      let tableId = msg.table?.id ?? msg.tableId ?? null;
-      let tableItem = msg.table?.item ?? msg.tableItem ?? null;
-      let tableItems = msg.table?.items ?? msg.tableItems ?? [];
-      let tableFilter = msg.table?.filter ?? msg.tableFilter ?? null;
-      let tableIdToDel = msg.tableIdToDel;
+      let tableId = rawId ?? msg.table?.id ?? msg.tableId ?? null;
+      let tableItem = item ?? msg.table?.item ?? msg.tableItem ?? null;
+      let tableItems = items ?? msg.table?.items ?? msg.tableItems ?? [];
+      let tableFilter = filter ?? msg.table?.filter ?? msg.tableFilter ?? null;
+      let tableIdToDel = idForDel ?? msg.tableIdToDel ?? null;
+
+      console.log({
+        tableIdToDel,
+        tableFilter,
+        tableItems,
+        tableItem,
+        tableId,
+      });
 
       if (!tableName) {
         node.error(RED._('platma-inbuilddb.errors.no-configured'));

@@ -1,4 +1,195 @@
 <script type="text/javascript">
+  function setupFilterList(containerId, initialData) {
+    const $container = $(`#${containerId}`);
+    $container.editableList({
+      addItem: function (container, i, data) {
+        const rowData = data || {};
+        container.css({
+          display: 'flex',
+          'align-items': 'flex-start',
+          gap: '8px',
+        });
+
+        const inputRows = $(
+          '<div style="flex:1; display:flex; flex-direction:column; gap:6px;"></div>',
+        ).appendTo(container);
+
+        const row1 = $(
+          '<div style="display:flex; align-items:center; gap:8px;"></div>',
+        ).appendTo(inputRows);
+        const $operator = $(
+          '<select class="filter-operator" style="width:150px; flex-shrink:0;"></select>',
+        ).appendTo(row1);
+        const operators = [
+          { value: 'eq', label: 'equals (=)' },
+          { value: 'gt', label: 'greater than (>)' },
+          { value: 'gte', label: 'greater than or equal (≥)' },
+          { value: 'lt', label: 'less than (<)' },
+          { value: 'lte', label: 'less than or equal (≤)' },
+          { value: 'neq', label: 'not equal (!=)' },
+          { value: 'like', label: 'LIKE' },
+          { value: 'ilike', label: 'ILIKE' },
+          { value: 'match', label: 'match' },
+          { value: 'imatch', label: 'case-insensitive match' },
+          { value: 'in', label: 'IN (1,2,3)' },
+          { value: 'is null', label: 'is null' },
+          { value: 'is true', label: 'is true' },
+          { value: 'is false', label: 'is false' },
+          { value: 'is unknown', label: 'is unknown' },
+        ];
+
+        operators.forEach((op) => {
+          $('<option>').val(op.value).text(op.label).appendTo($operator);
+        });
+
+        const colDiv = $('<div style="flex:1; min-width:0;"></div>').appendTo(
+          row1,
+        );
+        const $column = $('<input type="text" class="filter-column">').appendTo(
+          colDiv,
+        );
+        $column
+          .typedInput({
+            default: rowData.columnType || 'str',
+            types: ['str', 'msg', 'flow', 'global', 'env', 'jsonata'],
+          })
+          .typedInput('type', rowData.columnType || 'str')
+          .typedInput('value', rowData.column || '');
+
+        const row2 = $(
+          '<div style="display:flex; align-items:center; gap:8px;"></div>',
+        ).appendTo(inputRows);
+        $(
+          '<label style="width:150px; flex-shrink:0; text-align:right;">to the value</label>',
+        ).appendTo(row2);
+        const valDiv = $('<div style="flex:1; min-width:0;"></div>').appendTo(
+          row2,
+        );
+        const $value = $('<input type="text" class="filter-value">').appendTo(
+          valDiv,
+        );
+        $value
+          .typedInput({
+            default: rowData.type || 'str',
+            types: [
+              'str',
+              'num',
+              'bool',
+              'json',
+              'msg',
+              'flow',
+              'global',
+              'env',
+              'jsonata',
+            ],
+          })
+          .typedInput('type', rowData.type || 'str')
+          .typedInput('value', rowData.value || '');
+
+        $operator.on('change', function () {
+          const op = $(this).val();
+          if (['is null', 'is true', 'is false', 'is unknown'].includes(op))
+            row2.hide();
+          else row2.show();
+        });
+
+        $operator.val(rowData.operator || 'eq').trigger('change');
+      },
+      removable: true,
+      sortable: true,
+    });
+
+    if (initialData.length > 0) {
+      initialData.forEach((d) => $container.editableList('addItem', d));
+    } else {
+      $container.editableList('addItem');
+    }
+  }
+
+  function setupOrderList(containerId, initialData) {
+    const $container = $(`#${containerId}`);
+    $container.editableList({
+      addItem: function (container, i, data) {
+        const rowData = data || {};
+        container.css({
+          display: 'flex',
+          gap: '8px',
+          'align-items': 'center',
+          'flex-wrap': 'wrap',
+        });
+
+        const $direction = $(
+          '<select class="order-direction" style="width:150px; flex-shrink:0;"></select>',
+        ).appendTo(container);
+        ['asc', 'desc'].forEach((d) =>
+          $('<option>').val(d).text(d.toUpperCase()).appendTo($direction),
+        );
+        $direction.val(rowData.direction || 'asc');
+
+        const divCol = $('<div style="flex:1; min-width:0;"></div>').appendTo(
+          container,
+        );
+        const $column = $('<input type="text" class="order-column">').appendTo(
+          divCol,
+        );
+        $column
+          .typedInput({
+            default: rowData.columnType || 'str',
+            types: ['str', 'msg', 'flow', 'global', 'env', 'jsonata'],
+          })
+          .typedInput('type', rowData.columnType || 'str')
+          .typedInput('value', rowData.column || '');
+      },
+      removable: true,
+      sortable: true,
+    });
+
+    if (initialData.length > 0) {
+      initialData.forEach((d) => $container.editableList('addItem', d));
+    } else {
+      $container.editableList('addItem');
+    }
+  }
+
+  function exportFilter($item) {
+    const filter = {
+      column: $item.find('.filter-column').typedInput('value') || '',
+      columnType: $item.find('.filter-column').typedInput('type') || '',
+      operator: $item.find('.filter-operator').val() || '',
+      value: $item.find('.filter-value').typedInput('value') || '',
+      type: $item.find('.filter-value').typedInput('type') || '',
+    };
+    return filter;
+  }
+
+  function exportFilters(containerSelector) {
+    const filters = [];
+    $(`${containerSelector}`)
+      .editableList('items')
+      .each(function () {
+        filters.push(exportFilter($(this)));
+      });
+    return filters;
+  }
+
+  function exportOrder($item) {
+    return {
+      column: $item.find('.order-column').typedInput('value') || '',
+      columnType: $item.find('.order-column').typedInput('type') || '',
+      direction: $item.find('.order-direction').val() || 'asc',
+    };
+  }
+
+  function exportOrders(containerSelector) {
+    const orders = [];
+    $(`${containerSelector}`)
+      .editableList('items')
+      .each(function () {
+        orders.push(exportOrder($(this)));
+      });
+    return orders;
+  }
+
   RED.nodes.registerType('platma-inbuilddb', {
     category: 'function',
     color: '#4f84e7',
@@ -6,6 +197,48 @@
       tablename: { value: '' },
       method: { value: 'getall' },
       senderr: { value: true },
+      idForGetValue: { value: '' },
+      idForGetType: { value: 'num' },
+      idForChangeValue: { value: '' },
+      idForChangeType: { value: 'num' },
+      idForDelValue: { value: '' },
+      idForDelType: { value: 'num' },
+      itemForStoreType: { value: 'json' },
+      itemForStoreValue: { value: '' },
+      itemsForStoreManyType: { value: 'json' },
+      itemsForStoreManyValue: { value: '' },
+      itemForChangeType: { value: 'json' },
+      itemForChangeValue: { value: '' },
+      itemForChangeFilteredType: { value: 'json' },
+      itemForChangeFilteredValue: { value: '' },
+      offsetForGetType: { value: 'num' },
+      limitForGetType: { value: 'num' },
+      offsetForGetValue: { value: null },
+      limitForGetValue: { value: null },
+      offsetForChangeType: { value: 'num' },
+      limitForChangeType: { value: 'num' },
+      offsetForChangeValue: { value: null },
+      limitForChangeValue: { value: null },
+      offsetForDeleteType: { value: 'num' },
+      limitForDelType: { value: 'num' },
+      offsetForDeleteValue: { value: null },
+      limitForDelValue: { value: null },
+      rawId: { value: null },
+      idForDel: { value: null },
+      item: { value: {} },
+      items: { value: {} },
+      filter: { value: null },
+      limit: { value: null },
+      offset: { value: null },
+      order: { value: null },
+      orderForGet: { value: [] },
+      orderForChange: { value: [] },
+      orderForDel: { value: [] },
+      itemForStore: { value: '' },
+      itemsForStoreMany: { value: '' },
+      filtersForGet: { value: [] },
+      filtersForChange: { value: [] },
+      filtersForDel: { value: [] },
     },
     inputs: 1,
     outputs: 2,
@@ -17,12 +250,174 @@
       tablename: this.tablename,
       method: this.method,
       senderr: this.senderr,
+      rawId: this.rawId,
+      idForGetValue: this.idForGetValue,
+      idForGetType: this.idForGetType,
+      idForChangeValue: this.idForChangeValue,
+      idForChangeType: this.idForChangeType,
+      idForDelValue: this.idForDelValue,
+      idForDelType: this.idForDelType,
+      itemForStoreType: this.itemForStoreType,
+      itemForStoreValue: this.itemForStoreValue,
+      itemsForStoreManyType: this.itemsForStoreManyType,
+      itemsForStoreManyValue: this.itemsForStoreManyValue,
+      itemForChangeType: this.itemForChangeType,
+      itemForChangeValue: this.itemForChangeValue,
+      itemForChangeFilteredType: this.itemForChangeFilteredType,
+      itemForChangeFilteredValue: this.itemForChangeFilteredValue,
+      offsetForGetType: this.offsetForGetType,
+      limitForGetType: this.limitForGetType,
+      offsetForGetValue: this.offsetForGetValue,
+      limitForGetValue: this.limitForGetValue,
+      offsetForChangeType: this.offsetForChangeType,
+      limitForChangeType: this.limitForChangeType,
+      offsetForChangeValue: this.offsetForChangeValue,
+      limitForChangeValue: this.limitForChangeValue,
+      offsetForDeleteType: this.offsetForDeleteType,
+      limitForDelType: this.limitForDelType,
+      offsetForDeleteValue: this.offsetForDeleteValue,
+      limitForDelValue: this.limitForDelValue,
+      idForDel: this.idForDel,
+      item: this.item,
+      items: this.items,
+      filter: this.filter,
+      limit: this.limit,
+      offset: this.offset,
+      order: this.order,
+      filtersForGet: this.filtersForGet,
+      filtersForChange: this.filtersForChange,
+      filtersForDel: this.filtersForDel,
     },
     label: function () {
       return this.name;
     },
     oneditprepare: function () {
       let node = this;
+
+      [
+        {
+          id: 'node-input-idForGet',
+          type: node.idForGetType,
+          value: node.idForGetValue,
+        },
+        {
+          id: 'node-input-idForDel',
+          type: node.idForDelType,
+          value: node.idForDelValue,
+        },
+        {
+          id: 'node-input-idForChange',
+          type: node.idForChangeType,
+          value: node.idForChangeValue,
+        },
+        {
+          id: 'node-input-limitForGet',
+          type: node.limitForGetType,
+          value: node.limitForGetValue,
+        },
+        {
+          id: 'node-input-offsetForGet',
+          type: node.offsetForGetType,
+          value: node.offsetForGetValue,
+        },
+        {
+          id: 'node-input-limitForChange',
+          type: node.limitForChangeType,
+          value: node.limitForChangeValue,
+        },
+        {
+          id: 'node-input-offsetForChange',
+          type: node.offsetForChangeType,
+          value: node.offsetForChangeValue,
+        },
+        {
+          id: 'node-input-limitForDel',
+          type: node.limitForDelType,
+          value: node.limitForDelValue,
+        },
+        {
+          id: 'node-input-offsetForDelete',
+          type: node.offsetForDeleteType,
+          value: node.offsetForDeleteValue,
+        },
+      ].forEach(({ id, type, value }) => {
+        $(`#${id}`)
+          .typedInput({
+            default: type || 'num',
+            types: ['num', 'msg', 'flow', 'global', 'jsonata'],
+          })
+          .typedInput('type', type || 'num')
+          .typedInput('value', value ?? '');
+      });
+
+      [
+        {
+          id: 'node-input-itemForStore',
+          type: node.itemForStoreType,
+          value: node.itemForStoreValue,
+        },
+        {
+          id: 'node-input-itemsForStoreMany',
+          type: node.itemsForStoreManyType,
+          value: node.itemsForStoreManyValue,
+        },
+        {
+          id: 'node-input-itemForChange',
+          type: node.itemForChangeType,
+          value: node.itemForChangeValue,
+        },
+        {
+          id: 'node-input-itemForChangeFiltered',
+          type: node.itemForChangeFilteredType,
+          value: node.itemForChangeFilteredValue,
+        },
+      ].forEach(({ id, type, value }) => {
+        $(`#${id}`)
+          .typedInput({
+            default: type || 'json',
+            types: ['json', 'msg', 'flow', 'global', 'jsonata'],
+          })
+          .typedInput('type', type || 'json')
+          .typedInput('value', value || '');
+      });
+
+      ['Get', 'Change', 'Del'].forEach((suffix) => {
+        const filters = node[`filtersFor${suffix}`] || [];
+        const orders = node[`orderFor${suffix}`] || [];
+        setupFilterList(`filter-rows-For${suffix}`, filters);
+        setupOrderList(`order-builder-For${suffix}`, orders);
+
+        $(`#add-filter-row-For${suffix}`).on('click', (e) => {
+          e.preventDefault();
+          $(`#filter-rows-For${suffix}`).editableList('addItem');
+        });
+
+        $(`#add-order-For${suffix}`).on('click', (e) => {
+          e.preventDefault();
+          $(`#order-builder-For${suffix}`).editableList('addItem');
+        });
+      });
+
+      function handleInputs() {
+        function handleTableOperation() {
+          function handleSelect(value) {
+            document
+              .querySelectorAll('.field-group')
+              .forEach((el) => (el.style.display = 'none'));
+            const group = document.getElementById(`option-${value}`);
+            if (group) group.style.display = 'block';
+          }
+
+          const methodSelect = document.getElementById('node-input-method');
+          methodSelect.addEventListener('change', function () {
+            handleSelect(this.value);
+          });
+
+          handleSelect(methodSelect.value);
+        }
+
+        handleTableOperation();
+      }
 
       function getTableList() {
         const $select = $('#node-input-tablename');
@@ -87,11 +482,159 @@
       });
 
       getTableList();
+      handleInputs();
     },
 
     oneditsave: function () {
+      this.idForGetValue = $('#node-input-idForGet').typedInput('value');
+      this.idForGetType = $('#node-input-idForGet').typedInput('type');
+      this.idForChangeValue = $('#node-input-idForChange').typedInput('value');
+      this.idForChangeType = $('#node-input-idForChange').typedInput('type');
+      this.idForDelValue = $('#node-input-idForDel').typedInput('value');
+      this.idForDelType = $('#node-input-idForDel').typedInput('type');
+
+      this.itemForStoreValue = $('#node-input-itemForStore').typedInput(
+        'value',
+      );
+      this.itemForStoreType = $('#node-input-itemForStore').typedInput('type');
+      this.itemsForStoreManyValue = $(
+        '#node-input-itemsForStoreMany',
+      ).typedInput('value');
+      this.itemsForStoreManyType = $(
+        '#node-input-itemsForStoreMany',
+      ).typedInput('type');
+      this.itemForChangeValue = $('#node-input-itemForChange').typedInput(
+        'value',
+      );
+      this.itemForChangeType = $('#node-input-itemForChange').typedInput(
+        'type',
+      );
+      this.itemForChangeFilteredValue = $(
+        '#node-input-itemForChangeFiltered',
+      ).typedInput('value');
+      this.itemForChangeFilteredType = $(
+        '#node-input-itemForChangeFiltered',
+      ).typedInput('type');
+
+      this.limitForGetType = $('#node-input-limitForGet').typedInput('type');
+      this.limitForGetValue = $('#node-input-limitForGet').typedInput('value');
+      this.offsetForGetType = $('#node-input-offsetForGet').typedInput('type');
+      this.offsetForGetValue = $('#node-input-offsetForGet').typedInput(
+        'value',
+      );
+      this.limitForChangeType = $('#node-input-limitForChange').typedInput(
+        'type',
+      );
+      this.limitForChangeValue = $('#node-input-limitForChange').typedInput(
+        'value',
+      );
+      this.offsetForChangeType = $('#node-input-offsetForChange').typedInput(
+        'type',
+      );
+      this.offsetForChangeValue = $('#node-input-offsetForChange').typedInput(
+        'value',
+      );
+      this.limitForDelType = $('#node-input-limitForDel').typedInput('type');
+      this.limitForDelValue = $('#node-input-limitForDel').typedInput('value');
+      this.offsetForDeleteType = $('#node-input-offsetForDelete').typedInput(
+        'type',
+      );
+      this.offsetForDeleteValue = $('#node-input-offsetForDelete').typedInput(
+        'value',
+      );
+
       this.senderr = $('#node-input-senderr').is(':checked');
       this.outputs = this.senderr ? 2 : 1;
+
+      ['Get', 'Change', 'Del'].forEach((suffix) => {
+        this[`filtersFor${suffix}`] = exportFilters(
+          `#filter-rows-For${suffix}`,
+        );
+        this[`orderFor${suffix}`] = exportOrders(`#order-builder-For${suffix}`);
+      });
+
+      const method = document.getElementById('node-input-method').value;
+      this.filter = [];
+      this.order = null;
+      this.limit = null;
+      this.offset = [];
+      this.rawId = null;
+      this.idForDel = null;
+      this.item = {};
+      this.items = [];
+      switch (method) {
+        case 'getfiltered':
+          this.filter = JSON.parse(JSON.stringify(this.filtersForGet));
+          this.order = JSON.parse(JSON.stringify(this.orderForGet));
+          this.limit = {
+            type: this.limitForGetType,
+            value: this.limitForGetValue,
+          };
+          this.offset = {
+            type: this.offsetForGetType,
+            value: this.offsetForGetValue,
+          };
+          break;
+        case 'getone':
+          this.rawId = { type: this.idForGetType, value: this.idForGetValue };
+          break;
+        case 'store':
+          this.item = {
+            type: this.itemForStoreType,
+            value: this.itemForStoreValue,
+          };
+          break;
+        case 'storemany':
+          this.items = {
+            type: this.itemsForStoreManyType,
+            value: this.itemsForStoreManyValue,
+          };
+          break;
+        case 'changefiltered':
+          this.filter = JSON.parse(JSON.stringify(this.filtersForChange));
+          this.order = JSON.parse(JSON.stringify(this.orderForChange));
+          this.limit = {
+            type: this.limitForChangeType,
+            value: this.limitForChangeValue,
+          };
+          this.offset = {
+            type: this.offsetForChangeType,
+            value: this.offsetForChangeValue,
+          };
+          this.item = {
+            type: this.itemForChangeFilteredType,
+            value: this.itemForChangeFilteredValue,
+          };
+          break;
+        case 'change':
+          this.rawId = {
+            type: this.idForChangeType,
+            value: this.idForChangeValue,
+          };
+          this.item = {
+            type: this.itemForChangeType,
+            value: this.itemForChangeValue,
+          };
+          break;
+        case 'deletefiltered':
+          this.filter = JSON.parse(JSON.stringify(this.filtersForDel));
+          this.order = JSON.parse(JSON.stringify(this.orderForDel));
+          this.limit = {
+            type: this.limitForDelType,
+            value: this.limitForDelValue,
+          };
+          this.offset = {
+            type: this.offsetForDeleteType,
+            value: this.offsetForDeleteValue,
+          };
+          break;
+        case 'delete':
+          this.idForDel = {
+            type: this.idForDelType,
+            value: this.idForDelValue,
+          };
+          break;
+      }
     },
   });
 </script>
@@ -99,7 +642,7 @@
 <script type="text/html" data-template-name="platma-inbuilddb">
   <div class="form-row">
     <label for="node-input-tablename"
-      ><i class="fa fa-table"></i>Table name</label
+      ><i class="fa fa-table"></i> Table name</label
     >
     <select id="node-input-tablename" style="width: 50%;">
       <option>Loading...</option>
@@ -109,7 +652,7 @@
     Also, you may want to set it with msg.tableName.
   </div>
   <div class="form-row">
-    <label for="node-input-method"><i class="fa fa-cog"></i>Operations</label>
+    <label for="node-input-method"><i class="fa fa-cog"></i> Operations</label>
     <select
       id="node-input-method"
       style="width: 50%;"
@@ -129,6 +672,272 @@
     Pay attention, if you use msg.tableName then an Operations will be predicted
     by existing data. See below.
   </div>
+
+  <div id="fields" class="form-row">
+    <div class="field-group" id="option-getall" style="display:none;"></div>
+
+    <div class="field-group" id="option-getone" style="display:none;">
+      <label for="node-input-idForGet"
+        ><i class="fa fa-table"></i> Item id</label
+      >
+      <input type="text" id="node-input-idForGet" placeholder="Id to get" />
+      <br />
+      Also, you may want to set it with msg.tableId
+    </div>
+
+    <div class="field-group" id="option-getfiltered" style="display:none;">
+      <label style="width:250px; text-align:left;"
+        ><i class="fa fa-filter"></i> Filter Conditions</label
+      >
+
+      <ol id="filter-rows-ForGet" style="min-height:120px;"></ol>
+
+      <div style="height: 20px;"></div>
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-limitForGet"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-compress"></i> Limit</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-limitForGet"
+            min="0"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-offsetForGet"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-step-forward"></i> Offset</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-offsetForGet"
+            min="0"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div style="height: 20px;"></div>
+        <label><i class="fa fa-sort"></i> Order</label>
+        <ol id="order-builder-ForGet" style="min-height:120px;"></ol>
+      </div>
+      <br />
+      Also, you may want to set it with msg.tableFilter
+    </div>
+
+    <div class="field-group" id="option-store" style="display:none;">
+      <label for="node-input-itemForStore"
+        ><i class="fa fa-table"></i> Item to store</label
+      >
+      <input type="text" id="node-input-itemForStore" />
+      <br />
+      Also, you may want to set it with msg.tableItem
+    </div>
+
+    <div class="field-group" id="option-storemany" style="display:none;">
+      <label for="node-input-itemsForStoreMany"
+        ><i class="fa fa-table"></i> Items to store</label
+      >
+      <input type="text" id="node-input-itemsForStoreMany" />
+      <br />
+      Also, you may want to set it with msg.tableItems
+    </div>
+
+    <div class="field-group" id="option-change" style="display:none;">
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-idForChange"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-table"></i> Item id to change</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-idForChange"
+            style="width:100%; box-sizing:border-box;"
+            placeholder="Id to change"
+          />
+        </div>
+      </div>
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-itemForChange"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-table"></i> Item to change</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-itemForChange"
+            placeholder="Item to change"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+      <br />
+      Also, you may want to set it with msg.tableId and msg.tableItem
+    </div>
+
+    <div class="field-group" id="option-changefiltered" style="display:none;">
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-itemForChangeFiltered"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-table"></i> Item to change</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-itemForChangeFiltered"
+            placeholder="Item to change"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+      <br />
+
+      <label style="width:250px; text-align:left;"
+        ><i class="fa fa-filter"></i> Filter Conditions</label
+      >
+
+      <ol id="filter-rows-ForChange" style="min-height:120px;"></ol>
+
+      <div style="height: 20px;"></div>
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-limitForChange"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-compress"></i> Limit</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-limitForChange"
+            min="0"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-offsetForChange"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-step-forward"></i> Offset</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-offsetForChange"
+            min="0"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div style="height: 20px;"></div>
+        <label><i class="fa fa-sort"></i> Order</label>
+        <ol id="order-builder-ForChange" style="min-height:120px;"></ol>
+      </div>
+      <br />
+      Also, you may want to set it with msg.tableItem and msg.tableFilter
+    </div>
+
+    <div class="field-group" id="option-delete" style="display:none;">
+      <label for="node-input-idForDel"
+        ><i class="fa fa-table"></i> Item id to delete</label
+      >
+      <input type="text" id="node-input-idForDel" placeholder="Id to delete" />
+      <br />
+      Also, you may want to set it with msg.tableIdToDel
+    </div>
+
+    <div class="field-group" id="option-deletefiltered" style="display:none;">
+      <label><i class="fa fa-filter"></i> Filter Conditions</label>
+
+      <ol id="filter-rows-ForDel" style="min-height:120px;"></ol>
+
+      <div style="height: 20px;"></div>
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-limitForDel"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-compress"></i> Limit</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-limitForDel"
+            min="0"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+
+      <div
+        class="form-row"
+        style="display:flex;align-items:center;gap:8px;width:100%;"
+      >
+        <label
+          for="node-input-offsetForDelete"
+          style="width:150px; flex-shrink:0; text-align:left;"
+          ><i class="fa fa-step-forward"></i> Offset</label
+        >
+        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
+          <input
+            type="text"
+            id="node-input-offsetForDelete"
+            min="0"
+            style="width:100%; box-sizing:border-box;"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div style="height: 20px;"></div>
+        <label><i class="fa fa-sort"></i> Order</label>
+
+        <ol id="order-builder-ForDel" style="min-height:120px;"></ol>
+      </div>
+      <br />
+      Also, you may want to set it with msg.tableFilter
+    </div>
+  </div>
+
   <div class="form-row">
     <label
       for="node-input-senderr"
