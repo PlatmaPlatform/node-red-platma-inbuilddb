@@ -225,8 +225,8 @@
       limitForDelValue: { value: null },
       rawId: { value: null },
       idForDel: { value: null },
-      item: { value: {} },
-      items: { value: {} },
+      item: { value: null },
+      items: { value: null },
       filter: { value: null },
       limit: { value: null },
       offset: { value: null },
@@ -560,8 +560,8 @@
       this.offset = [];
       this.rawId = null;
       this.idForDel = null;
-      this.item = {};
-      this.items = [];
+      this.item = '{}';
+      this.items = '[]';
       switch (method) {
         case 'getfiltered':
           this.filter = JSON.parse(JSON.stringify(this.filtersForGet));
