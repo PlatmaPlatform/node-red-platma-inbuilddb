@@ -141,8 +141,7 @@ module.exports = function (RED) {
 
       let filter =
         (config.filter ?? []).length > 0
-          ? '?' +
-            constructFilter(
+          ? constructFilter(
               config.filter.map((item) => {
                 return {
                   column: resolveTypedInputSync(
@@ -209,7 +208,12 @@ module.exports = function (RED) {
         return;
       }
 
-      if (tableName && config.method) {
+      console.log({
+        tableName: tableName,
+        method: config.method,
+      });
+
+      if (config.tableName && config.method) {
         operation = config.method;
 
         const isTableIdNeeds =
@@ -282,7 +286,7 @@ module.exports = function (RED) {
           !!tableItem &&
           !tableId &&
           !tableIdToDel &&
-          !tableItems;
+          !(tableItems && tableItems.length > 0);
         const isCreateRows =
           !!tableName &&
           !!tableItems &&
@@ -294,16 +298,28 @@ module.exports = function (RED) {
           !!tableItem &&
           !!tableId &&
           !tableIdToDel &&
-          !tableItems;
+          !(tableItems && tableItems.length > 0);
         const isDeleteRow =
           !!tableName &&
           !tableItem &&
           !tableId &&
           !!tableIdToDel &&
-          !tableItems;
+          !(tableItems && tableItems.length > 0);
 
         byTableId = tableId ? `?id=eq.${tableId}` : '';
         byFilter = tableFilter || '';
+
+        console.log({
+          isCreateRow,
+          isCreateRows,
+          isDeleteRow,
+          isListFiltered,
+          isUpdateRow,
+          byTableId,
+          byFilter,
+          operation,
+        });
+
         if (isListFiltered) {
           operation = 'list';
         } else if (isCreateRow) {
@@ -325,6 +341,17 @@ module.exports = function (RED) {
           nodeDone();
           return;
         }
+
+        console.log({
+          isCreateRow,
+          isCreateRows,
+          isDeleteRow,
+          isListFiltered,
+          isUpdateRow,
+          byTableId,
+          byFilter,
+          operation,
+        });
       }
 
       node.status({
@@ -332,6 +359,8 @@ module.exports = function (RED) {
         shape: 'dot',
         text: 'platma-inbuilddbp.status.requesting',
       });
+
+      if (!byTableId) byFilter = '?' + byFilter;
 
       let url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${tableName}%7D${byTableId}${byFilter}`;
       if (operation === 'multi_create' || config.method === 'storemany') {
