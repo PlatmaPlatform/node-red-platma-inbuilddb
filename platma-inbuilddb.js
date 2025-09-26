@@ -116,20 +116,28 @@ module.exports = function (RED) {
         text: 'platma-inbuilddb.status.requesting',
       });
 
-      let rawId = config.rawId
-        ? resolveTypedInputSync(config.rawId, msg, node)
-        : null;
+      console.log({
+        rawId: config.rawId,
+        item: config.item,
+        items: config.items,
+      });
+
+      let rawId =
+        config.rawId && config.rawId?.value
+          ? resolveTypedInputSync(config.rawId, msg, node)
+          : null;
       let item =
-        config.item && !isEmpty(config.item)
+        config.item && config.item?.value && !isEmpty(config.item)
           ? resolveTypedInputSync(config.item, msg, node)
           : null;
       let items =
-        config.items && !isEmpty(config.items)
+        config.items && config.items?.value && !isEmpty(config.items)
           ? resolveTypedInputSync(config.items, msg, node)
           : null;
-      let idForDel = config.idForDel
-        ? resolveTypedInputSync(config.idForDel, msg, node)
-        : null;
+      let idForDel =
+        config.idForDel && config.idForDel?.value
+          ? resolveTypedInputSync(config.idForDel, msg, node)
+          : null;
 
       let filter =
         (config.filter ?? []).length > 0
@@ -165,14 +173,22 @@ module.exports = function (RED) {
             )
           : null;
 
+      console.log({
+        rawId,
+        item,
+        items,
+        idForDel,
+        filter,
+      });
+
       let operation, byTableId, byFilter;
       let tableName =
         msg.table?.name ?? msg.tableName ?? config.tablename ?? null;
-      let tableId = rawId ?? msg.table?.id ?? msg.tableId ?? null;
-      let tableItem = item ?? msg.table?.item ?? msg.tableItem ?? null;
-      let tableItems = items ?? msg.table?.items ?? msg.tableItems ?? [];
-      let tableFilter = filter ?? msg.table?.filter ?? msg.tableFilter ?? null;
-      let tableIdToDel = idForDel ?? msg.tableIdToDel ?? null;
+      let tableId = msg.table?.id ?? msg.tableId ?? rawId ?? null;
+      let tableItem = msg.table?.item ?? msg.tableItem ?? item ?? null;
+      let tableItems = msg.table?.items ?? msg.tableItems ?? items ?? [];
+      let tableFilter = msg.table?.filter ?? msg.tableFilter ?? filter ?? null;
+      let tableIdToDel = msg.tableIdToDel ?? idForDel ?? null;
 
       console.log({
         tableIdToDel,
@@ -365,6 +381,7 @@ module.exports = function (RED) {
 
         data = formData;
       }
+
       axios({
         method,
         url,

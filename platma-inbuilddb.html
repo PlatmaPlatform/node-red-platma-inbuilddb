@@ -167,7 +167,8 @@
     $(`${containerSelector}`)
       .editableList('items')
       .each(function () {
-        filters.push(exportFilter($(this)));
+        let r = exportFilter($(this));
+        if (r.value && r.column) filters.push(exportFilter($(this)));
       });
     return filters;
   }
@@ -225,8 +226,8 @@
       limitForDelValue: { value: null },
       rawId: { value: null },
       idForDel: { value: null },
-      item: { value: null },
-      items: { value: null },
+      item: { value: '{}' },
+      items: { value: '[]' },
       filter: { value: null },
       limit: { value: null },
       offset: { value: null },
@@ -234,8 +235,6 @@
       orderForGet: { value: [] },
       orderForChange: { value: [] },
       orderForDel: { value: [] },
-      itemForStore: { value: '' },
-      itemsForStoreMany: { value: '' },
       filtersForGet: { value: [] },
       filtersForChange: { value: [] },
       filtersForDel: { value: [] },
@@ -287,6 +286,9 @@
       filtersForGet: this.filtersForGet,
       filtersForChange: this.filtersForChange,
       filtersForDel: this.filtersForDel,
+      orderForGet: this.orderForGet,
+      orderForChange: this.orderForChange,
+      orderForDel: this.orderForDel,
     },
     label: function () {
       return this.name;
