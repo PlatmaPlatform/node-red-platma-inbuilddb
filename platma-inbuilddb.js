@@ -280,7 +280,10 @@ module.exports = function (RED) {
         }
       } else {
         const isListFiltered =
-          !!tableName && !tableItem && !tableIdToDel && !tableItems;
+          !!tableName &&
+          !tableItem &&
+          !tableIdToDel &&
+          !(tableItems && tableItems.length > 0);
         const isCreateRow =
           !!tableName &&
           !!tableItem &&
