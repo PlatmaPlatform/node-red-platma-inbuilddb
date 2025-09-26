@@ -64,7 +64,7 @@ module.exports = function (RED) {
   const userId = parseInt(process?.env?.USER_ID);
   const appId = parseInt(process?.env?.APP_ID);
 
-  function resolveTypedInputSync(typedInput, msg, node) {
+  async function resolveTypedInputSync(typedInput, msg, node) {
     if (!typedInput) return undefined;
 
     const { type, value } = typedInput;
@@ -89,6 +89,13 @@ module.exports = function (RED) {
       case 'env':
         return process.env[value] || null;
       case 'jsonata':
+        return new Promise((resolve, reject) => {
+          const expr = RED.util.prepareJSONataExpression(value, node);
+          RED.util.evaluateJSONataExpression(expr, msg, (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        });
       default:
         return value;
     }
@@ -97,7 +104,7 @@ module.exports = function (RED) {
   function PlatmaInbuildDb(config) {
     RED.nodes.createNode(this, config);
     const node = this;
-    node.on('input', function (msg, nodeSend, nodeDone) {
+    node.on('input', async function (msg, nodeSend, nodeDone) {
       token = process?.env?.CORESERVICE_API_TOKEN;
       if (!CORESERVICE_API_HOST || !token || !userId || !appId) {
         node.error(RED._('platma-inbuilddb.errors.lack-envs'));
@@ -120,55 +127,60 @@ module.exports = function (RED) {
         rawId: config.rawId,
         item: config.item,
         items: config.items,
+        idForDel: config.idDel,
+        filters: config.filter,
+        order: config.order,
+        limit: config.limit,
+        offset: config.offset,
       });
 
       let rawId =
         config.rawId && config.rawId?.value
-          ? resolveTypedInputSync(config.rawId, msg, node)
+          ? await resolveTypedInputSync(config.rawId, msg, node)
           : null;
       let item =
         config.item && config.item?.value && !isEmpty(config.item)
-          ? resolveTypedInputSync(config.item, msg, node)
+          ? await resolveTypedInputSync(config.item, msg, node)
           : null;
       let items =
         config.items && config.items?.value && !isEmpty(config.items)
-          ? resolveTypedInputSync(config.items, msg, node)
+          ? await resolveTypedInputSync(config.items, msg, node)
           : null;
       let idForDel =
-        config.idForDel && config.idForDel?.value
-          ? resolveTypedInputSync(config.idForDel, msg, node)
+        config.idDel && config.idDel?.value
+          ? await resolveTypedInputSync(config.idDel, msg, node)
           : null;
 
       let filter =
         (config.filter ?? []).length > 0
           ? constructFilter(
-              config.filter.map((item) => {
-                return {
-                  column: resolveTypedInputSync(
+              await Promise.all(
+                config.filter.map(async (item) => ({
+                  column: await resolveTypedInputSync(
                     { value: item.column, type: item.columnType },
                     msg,
                     node,
                   ),
                   operator: item.operator,
-                  value: resolveTypedInputSync(
+                  value: await resolveTypedInputSync(
                     { value: item.value, type: item.type },
                     msg,
                     node,
                   ),
-                };
-              }),
-              resolveTypedInputSync(config.limit, msg, node),
-              resolveTypedInputSync(config.offset, msg, node),
-              config.order.map((item) => {
-                return {
-                  column: resolveTypedInputSync(
+                })),
+              ),
+              await resolveTypedInputSync(config.limit, msg, node),
+              await resolveTypedInputSync(config.offset, msg, node),
+              await Promise.all(
+                config.order.map(async (item) => ({
+                  column: await resolveTypedInputSync(
                     { value: item.column, type: item.columnType },
                     msg,
                     node,
                   ),
                   direction: item.direction,
-                };
-              }),
+                })),
+              ),
             )
           : null;
 

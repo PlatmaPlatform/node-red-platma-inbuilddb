@@ -225,7 +225,7 @@
       offsetForDeleteValue: { value: null },
       limitForDelValue: { value: null },
       rawId: { value: null },
-      idForDel: { value: null },
+      idDel: { value: null },
       item: { value: '{}' },
       items: { value: '[]' },
       filter: { value: null },
@@ -276,7 +276,7 @@
       limitForDelType: this.limitForDelType,
       offsetForDeleteValue: this.offsetForDeleteValue,
       limitForDelValue: this.limitForDelValue,
-      idForDel: this.idForDel,
+      idDel: this.idDel,
       item: this.item,
       items: this.items,
       filter: this.filter,
@@ -561,7 +561,7 @@
       this.limit = null;
       this.offset = [];
       this.rawId = null;
-      this.idForDel = null;
+      this.idDel = null;
       this.item = '{}';
       this.items = '[]';
       switch (method) {
@@ -631,7 +631,7 @@
           };
           break;
         case 'delete':
-          this.idForDel = {
+          this.idDel = {
             type: this.idForDelType,
             value: this.idForDelValue,
           };
