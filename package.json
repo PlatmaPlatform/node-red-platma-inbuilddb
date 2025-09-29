@@ -1,6 +1,6 @@
 {
   "name": "@platmaplatform/node-red-platma-inbuilddb",
-  "version": "1.5.46",
+  "version": "1.6.0",
   "description": "Node is providing full access to InBuild DB of Platma.",
   "private": false,
   "main": "index.js",
