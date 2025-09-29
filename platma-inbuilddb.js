@@ -1,4 +1,62 @@
-const axios = require('axios');
+const FormData = require('form-data');
+function toCSV(data) {
+  if (!data.length) return '';
+  const headers = Object.keys(data[0]);
+  const rows = data.map((row) => headers.map((h) => row[h]).join(','));
+  return [headers.join(','), ...rows].join('\n');
+}
+
+function formatOrder(o) {
+  return `${encodeURIComponent(o.column)}.${o.direction}`;
+}
+
+const substituteValue = {
+  'is null': 'null',
+  'is true': 'true',
+  'is false': 'false',
+  'is unknown': 'unknown',
+};
+
+function formatFilter(f) {
+  if (!f.operator) return '';
+  let val = f.value;
+  if (f.operator in substituteValue) {
+    val = substituteValue[f.operator];
+    f.operator = 'is';
+  }
+  if (Array.isArray(val)) val = `(${val.join(',')})`;
+  return `${encodeURIComponent(f.column)}=${f.operator}.${encodeURIComponent(
+    val,
+  )}`;
+}
+
+function constructFilter(filters, limit, offset, orders) {
+  let params = [];
+
+  if (filters?.length) {
+    filters.forEach((f) => {
+      const filterStr = formatFilter(f);
+      if (filterStr) params.push(filterStr);
+    });
+  }
+
+  if (orders?.length) {
+    const orderStr = orders.map(formatOrder).join('%2C');
+    if (orderStr && orderStr !== '.asc' && orderStr !== '.desc')
+      params.push(`order=${orderStr}`);
+  }
+
+  if (limit) params.push(`limit=${limit}`);
+  if (offset) params.push(`offset=${offset}`);
+
+  return params.join('&');
+}
+
+const isEmpty = (v) =>
+  v == null ||
+  (Array.isArray(v) && v.length === 0) ||
+  (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0);
+
 module.exports = function (RED) {
   const axios = require('axios');
   const CORESERVICE_API_HOST = process?.env?.CORESERVICE_API_HOST;
@@ -6,10 +64,47 @@ module.exports = function (RED) {
   const userId = parseInt(process?.env?.USER_ID);
   const appId = parseInt(process?.env?.APP_ID);
 
+  async function resolveTypedInputSync(typedInput, msg, node) {
+    if (!typedInput) return undefined;
+
+    const { type, value } = typedInput;
+
+    switch (type) {
+      case 'num':
+        return Number(value);
+      case 'str':
+        return String(value);
+      case 'json':
+        try {
+          return JSON.parse(value);
+        } catch (e) {
+          return value;
+        }
+      case 'msg':
+        return msg[value];
+      case 'flow':
+        return node.context().flow?.get(value);
+      case 'global':
+        return node.context().global?.get(value);
+      case 'env':
+        return value;
+      case 'jsonata':
+        return new Promise((resolve, reject) => {
+          const expr = RED.util.prepareJSONataExpression(value, node);
+          RED.util.evaluateJSONataExpression(expr, msg, (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        });
+      default:
+        return value;
+    }
+  }
+
   function PlatmaInbuildDb(config) {
     RED.nodes.createNode(this, config);
     const node = this;
-    node.on('input', function (msg, nodeSend, nodeDone) {
+    node.on('input', async function (msg, nodeSend, nodeDone) {
       token = process?.env?.CORESERVICE_API_TOKEN;
       if (!CORESERVICE_API_HOST || !token || !userId || !appId) {
         node.error(RED._('platma-inbuilddb.errors.lack-envs'));
@@ -28,10 +123,93 @@ module.exports = function (RED) {
         text: 'platma-inbuilddb.status.requesting',
       });
 
-      let operation, byTableId, byFilter;
-      let { tableName, tableId, tableIdToDel, tableItem, tableFilter } = msg;
+      console.log({
+        rawId: config.rawId,
+        item: config.item,
+        items: config.items,
+        idForDel: config.idDel,
+        filters: config.filter,
+        order: config.order,
+        limit: config.limit,
+        offset: config.offset,
+      });
 
-      if (!config.tablename && !tableName) {
+      let rawId =
+        config.rawId && config.rawId?.value
+          ? await resolveTypedInputSync(config.rawId, msg, node)
+          : null;
+      let item =
+        config.item && config.item?.value && !isEmpty(config.item)
+          ? await resolveTypedInputSync(config.item, msg, node)
+          : null;
+      let items =
+        config.items && config.items?.value && !isEmpty(config.items)
+          ? await resolveTypedInputSync(config.items, msg, node)
+          : null;
+      let idForDel =
+        config.idDel && config.idDel?.value
+          ? await resolveTypedInputSync(config.idDel, msg, node)
+          : null;
+
+      let filter =
+        (config.filter ?? []).length > 0
+          ? constructFilter(
+              await Promise.all(
+                config.filter.map(async (item) => ({
+                  column: await resolveTypedInputSync(
+                    { value: item.column, type: item.columnType },
+                    msg,
+                    node,
+                  ),
+                  operator: item.operator,
+                  value: await resolveTypedInputSync(
+                    { value: item.value, type: item.type },
+                    msg,
+                    node,
+                  ),
+                })),
+              ),
+              await resolveTypedInputSync(config.limit, msg, node),
+              await resolveTypedInputSync(config.offset, msg, node),
+              await Promise.all(
+                config.order.map(async (item) => ({
+                  column: await resolveTypedInputSync(
+                    { value: item.column, type: item.columnType },
+                    msg,
+                    node,
+                  ),
+                  direction: item.direction,
+                })),
+              ),
+            )
+          : null;
+
+      console.log({
+        rawId,
+        item,
+        items,
+        idForDel,
+        filter,
+      });
+
+      let operation, byTableId, byFilter;
+      let tableName =
+        msg.table?.name ?? msg.tableName ?? config.tablename ?? null;
+      let tableId = msg.table?.id ?? msg.tableId ?? rawId ?? null;
+      let tableItem = msg.table?.item ?? msg.tableItem ?? item ?? null;
+      let tableItems = msg.table?.items ?? msg.tableItems ?? items ?? [];
+      let tableFilter = msg.table?.filter ?? msg.tableFilter ?? filter ?? null;
+      let tableIdToDel = msg.tableIdToDel ?? idForDel ?? null;
+
+      console.log({
+        tableIdToDel,
+        tableFilter,
+        tableItems,
+        tableItem,
+        tableId,
+      });
+
+      if (!tableName) {
         node.error(RED._('platma-inbuilddb.errors.no-configured'));
         node.status({
           fill: 'red',
@@ -42,7 +220,12 @@ module.exports = function (RED) {
         return;
       }
 
-      if (config.tablename && config.method) {
+      console.log({
+        tableName: tableName,
+        method: config.method,
+      });
+
+      if (config.tableName && config.method) {
         operation = config.method;
 
         const isTableIdNeeds =
@@ -50,18 +233,25 @@ module.exports = function (RED) {
           config.method === 'change' ||
           config.method === 'delete';
         const isTableItem =
-          config.method === 'store' || config.method === 'change';
+          config.method === 'store' ||
+          config.method === 'change' ||
+          config.method === 'changefiltered';
+        const isTableItems = config.method === 'storemany';
 
-        if (isTableIdNeeds && !msg.tableId) {
+        if (config.method === 'delete') {
+          tableId = tableIdToDel;
+        }
+
+        if (isTableIdNeeds && !tableId) {
           node.error(RED._('platma-inbuilddb.errors.no-tableId'));
           node.status({ fill: 'red', shape: 'dot', text: 'Error. No tableId' });
           nodeDone();
           return;
         } else {
-          byTableId = msg?.tableId ? `?id=eq.${msg?.tableId}` : '';
+          byTableId = tableId ? `?id=eq.${tableId}` : '';
         }
 
-        if (isTableItem && !msg.tableItem) {
+        if (isTableItem && !tableItem) {
           node.error(RED._('platma-inbuilddb.errors.no-tableItem'));
           node.status({
             fill: 'red',
@@ -72,7 +262,23 @@ module.exports = function (RED) {
           return;
         }
 
-        if (config.method === 'getfiltered' && !msg.tableFilter) {
+        if (isTableItems && !tableItems) {
+          node.error(RED._('platma-inbuilddb.errors.no-tableItems'));
+          node.status({
+            fill: 'red',
+            shape: 'dot',
+            text: 'Error. No tableItems',
+          });
+          nodeDone();
+          return;
+        }
+
+        if (
+          ['getfiltered', 'changefiltered', 'deletefiltered'].includes(
+            config.method,
+          ) &&
+          !tableFilter
+        ) {
           node.error(RED._('platma-inbuilddb.errors.no-tableFilter'));
           node.status({
             fill: 'red',
@@ -82,23 +288,59 @@ module.exports = function (RED) {
           nodeDone();
           return;
         } else {
-          byFilter = msg.tableFilter || '';
+          byFilter = tableFilter || '';
         }
       } else {
-        const isListFiltered = !!tableName && !tableItem && !tableIdToDel;
+        const isListFiltered =
+          !!tableName &&
+          !tableItem &&
+          !tableIdToDel &&
+          !(tableItems && tableItems.length > 0);
         const isCreateRow =
-          !!tableName && !!tableItem && !tableId && !tableIdToDel;
+          !!tableName &&
+          !!tableItem &&
+          !tableId &&
+          !tableIdToDel &&
+          !(tableItems && tableItems.length > 0);
+        const isCreateRows =
+          !!tableName &&
+          !!tableItems &&
+          !tableId &&
+          !tableIdToDel &&
+          !tableItem;
         const isUpdateRow =
-          !!tableName && !!tableItem && !!tableId && !tableIdToDel;
+          !!tableName &&
+          !!tableItem &&
+          !!tableId &&
+          !tableIdToDel &&
+          !(tableItems && tableItems.length > 0);
         const isDeleteRow =
-          !!tableName && !tableItem && !tableId && !!tableIdToDel;
+          !!tableName &&
+          !tableItem &&
+          !tableId &&
+          !!tableIdToDel &&
+          !(tableItems && tableItems.length > 0);
 
         byTableId = tableId ? `?id=eq.${tableId}` : '';
         byFilter = tableFilter || '';
+
+        console.log({
+          isCreateRow,
+          isCreateRows,
+          isDeleteRow,
+          isListFiltered,
+          isUpdateRow,
+          byTableId,
+          byFilter,
+          operation,
+        });
+
         if (isListFiltered) {
           operation = 'list';
         } else if (isCreateRow) {
           operation = 'create';
+        } else if (isCreateRows) {
+          operation = 'multi_create';
         } else if (isUpdateRow) {
           operation = 'update';
         } else if (isDeleteRow) {
@@ -114,6 +356,17 @@ module.exports = function (RED) {
           nodeDone();
           return;
         }
+
+        console.log({
+          isCreateRow,
+          isCreateRows,
+          isDeleteRow,
+          isListFiltered,
+          isUpdateRow,
+          byTableId,
+          byFilter,
+          operation,
+        });
       }
 
       node.status({
@@ -122,41 +375,68 @@ module.exports = function (RED) {
         text: 'platma-inbuilddbp.status.requesting',
       });
 
-      const url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${
-        tableName || config.tablename
-      }%7D${byTableId}${byFilter}`;
+      if (!byTableId) byFilter = '?' + byFilter;
+
+      let url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red/$%7B${tableName}%7D${byTableId}${byFilter}`;
+      if (operation === 'multi_create' || config.method === 'storemany') {
+        url = `${CORESERVICE_API_HOST}/tooljet_db/organizations/${userId}/table/${tableName}/bulk-upload`;
+      }
       let method;
 
       if (operation === 'getall') {
         method = 'get';
       } else if (operation === 'getone') {
         method = 'get';
-      } else if (operation === 'getfiltered' || operation === 'list') {
+      } else if (['getfiltered', 'list'].includes(operation)) {
         method = 'get';
-      } else if (operation === 'store' || operation === 'create') {
+      } else if (
+        ['store', 'create', 'multi_create', 'storemany'].includes(operation)
+      ) {
         method = 'post';
-      } else if (operation === 'change' || operation === 'update') {
+      } else if (['change', 'update', 'changefiltered'].includes(operation)) {
         method = 'put';
-      } else if (operation === 'delete') {
+      } else if (['delete', 'deletefiltered'].includes(operation)) {
         method = 'delete';
       }
       msg.url = url;
       msg.method = method;
+      let headers = {
+        Authorization: `Bearer ${token}`,
+        userId,
+        appId,
+      };
+
+      let data = { ...tableItem };
+
+      let csvString;
+      let formData;
+
+      if (operation === 'multi_create' || config.method === 'storemany') {
+        csvString = toCSV(tableItems);
+
+        formData = new FormData();
+        formData.append('file', Buffer.from(csvString), 'table.csv');
+        formData.append('meta', JSON.stringify({ someExtraField: 123 }));
+
+        headers = {
+          ...headers,
+          ...formData.getHeaders(),
+        };
+
+        data = formData;
+      }
+
       axios({
         method,
         url,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          userId,
-          appId,
-        },
-        data: { ...msg.tableItem },
+        headers,
+        data,
       })
         .then((res) => {
           setResponse(msg, res, node, nodeSend, nodeDone);
         })
         .catch((err) => {
-          catchError(err, node, msg, config, nodeSend, nodeDone);
+          catchError(err, node, msg, config, nodeSend, nodeDone, RED);
         });
     });
 
@@ -168,6 +448,33 @@ module.exports = function (RED) {
       node.status({});
     });
   }
+
+  RED.httpAdmin.get('/platma-inbuilddb/tables', async function (req, res) {
+    token = process?.env?.CORESERVICE_API_TOKEN;
+
+    let headers = {
+      authorization: `Bearer ${token}`,
+      userid: userId,
+      appid: appId,
+    };
+
+    let body = {
+      get: { tables: 'all' },
+    };
+
+    try {
+      const response = await axios.post(
+        `${CORESERVICE_API_HOST}/tooljet_db/organizations/node-red-request`,
+        body,
+        { headers: headers },
+      );
+
+      res.json({ tables: response.data.data.tables || [] });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   RED.nodes.registerType('platma-inbuilddb', PlatmaInbuildDb);
 };
 
@@ -183,7 +490,7 @@ function setResponse(msg, res, node, nodeSend, nodeDone) {
   nodeDone();
 }
 
-function catchError(err, node, msg, config, nodeSend, nodeDone) {
+function catchError(err, node, msg, config, nodeSend, nodeDone, RED) {
   if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT') {
     node.error(RED._('common.notification.errors.no-response'), msg);
     node.status({
@@ -199,8 +506,14 @@ function catchError(err, node, msg, config, nodeSend, nodeDone) {
   msg.statusCode =
     err.code || (err.response ? err.response.statusCode : undefined);
 
-  if (!config.senderr) {
-    nodeSend(msg);
+  if (config.senderr) {
+    nodeSend([null, msg]);
+  } else {
+    node.error(err, msg);
+    if (msg.res && typeof msg.res.status === 'function') {
+      msg.res.status(500).send('Internal Server Error');
+    }
+    return;
   }
   nodeDone();
 }

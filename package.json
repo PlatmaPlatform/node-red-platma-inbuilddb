@@ -1,6 +1,6 @@
 {
   "name": "@platmac/node-red-platma-inbuilddb",
-  "version": "1.0.7",
+  "version": "1.5.46",
   "description": "Node is providing full access to InBuild DB of Platma.",
   "private": false,
   "main": "index.js",
@@ -10,7 +10,7 @@
   "keywords": [
     "node-red",
     "platma",
-	"inbuilddb"
+    "inbuilddb"
   ],
   "homepage": "https://github.com/PlatmaC/node-red-platma-inbuilddb",
   "repository": {
@@ -44,6 +44,7 @@
     "test": "test"
   },
   "dependencies": {
-    "axios": "^1.4.0"
+    "axios": "^1.4.0",
+    "form-data": "^4.0.4"
   }
 }
