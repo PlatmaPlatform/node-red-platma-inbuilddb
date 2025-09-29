@@ -87,7 +87,7 @@ module.exports = function (RED) {
       case 'global':
         return node.context().global?.get(value);
       case 'env':
-        return process.env[value] || null;
+        return value;
       case 'jsonata':
         return new Promise((resolve, reject) => {
           const expr = RED.util.prepareJSONataExpression(value, node);

@@ -6,8 +6,10 @@
         const rowData = data || {};
         container.css({
           display: 'flex',
-          'align-items': 'flex-start',
+          alignItems: 'flex-start',
           gap: '8px',
+          flex: '1 1 auto',
+          minWidth: 0,
         });
 
         const inputRows = $(
@@ -37,10 +39,9 @@
           { value: 'is false', label: 'is false' },
           { value: 'is unknown', label: 'is unknown' },
         ];
-
-        operators.forEach((op) => {
-          $('<option>').val(op.value).text(op.label).appendTo($operator);
-        });
+        operators.forEach((op) =>
+          $('<option>').val(op.value).text(op.label).appendTo($operator),
+        );
 
         const colDiv = $('<div style="flex:1; min-width:0;"></div>').appendTo(
           row1,
@@ -48,10 +49,11 @@
         const $column = $('<input type="text" class="filter-column">').appendTo(
           colDiv,
         );
+        $column.css({ width: '100%', flex: '1 1 auto', minWidth: 0 });
         $column
           .typedInput({
             default: rowData.columnType || 'str',
-            types: ['str', 'msg', 'flow', 'global', 'env', 'jsonata'],
+            types: ['str', 'msg', 'flow', 'global', 'jsonata'],
           })
           .typedInput('type', rowData.columnType || 'str')
           .typedInput('value', rowData.column || '');
@@ -68,6 +70,7 @@
         const $value = $('<input type="text" class="filter-value">').appendTo(
           valDiv,
         );
+        $value.css({ width: '100%', flex: '1 1 auto', minWidth: 0 });
         $value
           .typedInput({
             default: rowData.type || 'str',
@@ -79,7 +82,7 @@
               'msg',
               'flow',
               'global',
-              'env',
+
               'jsonata',
             ],
           })
@@ -114,8 +117,10 @@
         container.css({
           display: 'flex',
           gap: '8px',
-          'align-items': 'center',
-          'flex-wrap': 'wrap',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          flex: '1 1 auto',
+          minWidth: 0,
         });
 
         const $direction = $(
@@ -132,10 +137,11 @@
         const $column = $('<input type="text" class="order-column">').appendTo(
           divCol,
         );
+        $column.css({ width: '100%', flex: '1 1 auto', minWidth: 0 });
         $column
           .typedInput({
             default: rowData.columnType || 'str',
-            types: ['str', 'msg', 'flow', 'global', 'env', 'jsonata'],
+            types: ['str', 'msg', 'flow', 'global', 'jsonata'],
           })
           .typedInput('type', rowData.columnType || 'str')
           .typedInput('value', rowData.column || '');
@@ -682,7 +688,12 @@
       <label for="node-input-idForGet"
         ><i class="fa fa-table"></i> Item id</label
       >
-      <input type="text" id="node-input-idForGet" placeholder="Id to get" />
+      <input
+        type="text"
+        id="node-input-idForGet"
+        style="width: 50%;"
+        placeholder="Id to get"
+      />
       <br />
       Also, you may want to set it with msg.tableId
     </div>
@@ -701,7 +712,7 @@
       >
         <label
           for="node-input-limitForGet"
-          style="width:150px; flex-shrink:0; text-align:left;"
+          style="width:178px; flex-shrink:0; text-align:left;"
           ><i class="fa fa-compress"></i> Limit</label
         >
         <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
@@ -720,7 +731,7 @@
       >
         <label
           for="node-input-offsetForGet"
-          style="width:150px; flex-shrink:0; text-align:left;"
+          style="width:178px; flex-shrink:0; text-align:left;"
           ><i class="fa fa-step-forward"></i> Offset</label
         >
         <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
@@ -744,82 +755,67 @@
 
     <div class="field-group" id="option-store" style="display:none;">
       <label for="node-input-itemForStore"
-        ><i class="fa fa-table"></i> Item to store</label
+        ><i class="fa fa-table"></i> Item</label
       >
-      <input type="text" id="node-input-itemForStore" />
+      <input type="text" id="node-input-itemForStore" style="width: 50%;" />
       <br />
       Also, you may want to set it with msg.tableItem
     </div>
 
     <div class="field-group" id="option-storemany" style="display:none;">
       <label for="node-input-itemsForStoreMany"
-        ><i class="fa fa-table"></i> Items to store</label
+        ><i class="fa fa-table"></i> Items</label
       >
-      <input type="text" id="node-input-itemsForStoreMany" />
+      <input
+        type="text"
+        id="node-input-itemsForStoreMany"
+        style="width: 50%;"
+      />
       <br />
       Also, you may want to set it with msg.tableItems
     </div>
 
     <div class="field-group" id="option-change" style="display:none;">
-      <div
-        class="form-row"
-        style="display:flex;align-items:center;gap:8px;width:100%;"
+      <label for="node-input-idForChange"
+        ><i class="fa fa-table"></i> Item id</label
       >
-        <label
-          for="node-input-idForChange"
-          style="width:150px; flex-shrink:0; text-align:left;"
-          ><i class="fa fa-table"></i> Item id to change</label
-        >
-        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
-          <input
-            type="text"
-            id="node-input-idForChange"
-            style="width:100%; box-sizing:border-box;"
-            placeholder="Id to change"
-          />
-        </div>
-      </div>
-      <div
-        class="form-row"
-        style="display:flex;align-items:center;gap:8px;width:100%;"
+      <input
+        type="text"
+        id="node-input-idForChange"
+        style="width:50%;"
+        placeholder="Id to change"
+      />
+
+      <br />
+      <div style="height: 20px;"></div>
+
+      <label for="node-input-itemForChange"
+        ><i class="fa fa-table"></i> Item</label
       >
-        <label
-          for="node-input-itemForChange"
-          style="width:150px; flex-shrink:0; text-align:left;"
-          ><i class="fa fa-table"></i> Item to change</label
-        >
-        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
-          <input
-            type="text"
-            id="node-input-itemForChange"
-            placeholder="Item to change"
-            style="width:100%; box-sizing:border-box;"
-          />
-        </div>
-      </div>
+      <input
+        type="text"
+        id="node-input-itemForChange"
+        placeholder="Item to change"
+        style="width:50%;"
+      />
+
       <br />
       Also, you may want to set it with msg.tableId and msg.tableItem
     </div>
 
     <div class="field-group" id="option-changefiltered" style="display:none;">
-      <div
-        class="form-row"
-        style="display:flex;align-items:center;gap:8px;width:100%;"
+      <label for="node-input-itemForChangeFiltered"
+        ><i class="fa fa-table"></i> Item to change</label
       >
-        <label
-          for="node-input-itemForChangeFiltered"
-          style="width:150px; flex-shrink:0; text-align:left;"
-          ><i class="fa fa-table"></i> Item to change</label
-        >
-        <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
-          <input
-            type="text"
-            id="node-input-itemForChangeFiltered"
-            placeholder="Item to change"
-            style="width:100%; box-sizing:border-box;"
-          />
-        </div>
-      </div>
+      <input
+        type="text"
+        id="node-input-itemForChangeFiltered"
+        placeholder="Item to change"
+        style="width:50%; box-sizing:border-box;"
+      />
+
+      <div style="height: 20px;"></div>
+
       <br />
 
       <label style="width:250px; text-align:left;"
@@ -835,7 +831,7 @@
       >
         <label
           for="node-input-limitForChange"
-          style="width:150px; flex-shrink:0; text-align:left;"
+          style="width:178px; flex-shrink:0; text-align:left;"
           ><i class="fa fa-compress"></i> Limit</label
         >
         <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
@@ -854,7 +850,7 @@
       >
         <label
           for="node-input-offsetForChange"
-          style="width:150px; flex-shrink:0; text-align:left;"
+          style="width:178px; flex-shrink:0; text-align:left;"
           ><i class="fa fa-step-forward"></i> Offset</label
         >
         <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
@@ -880,7 +876,12 @@
       <label for="node-input-idForDel"
         ><i class="fa fa-table"></i> Item id to delete</label
       >
-      <input type="text" id="node-input-idForDel" placeholder="Id to delete" />
+      <input
+        type="text"
+        id="node-input-idForDel"
+        style="width:50%;"
+        placeholder="Id to delete"
+      />
       <br />
       Also, you may want to set it with msg.tableIdToDel
     </div>
@@ -897,7 +898,7 @@
       >
         <label
           for="node-input-limitForDel"
-          style="width:150px; flex-shrink:0; text-align:left;"
+          style="width:178px; flex-shrink:0; text-align:left;"
           ><i class="fa fa-compress"></i> Limit</label
         >
         <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
@@ -916,7 +917,7 @@
       >
         <label
           for="node-input-offsetForDelete"
-          style="width:150px; flex-shrink:0; text-align:left;"
+          style="width:178px; flex-shrink:0; text-align:left;"
           ><i class="fa fa-step-forward"></i> Offset</label
         >
         <div class="red-ui-typedInput-container" style="flex:1; min-width:0;">
@@ -940,22 +941,34 @@
     </div>
   </div>
 
-  <div class="form-row">
-    <label
-      for="node-input-senderr"
-      style="display: flex; align-items: center; gap: 6px; color: #b30000; font-weight: 500;"
-    >
-      <i class="fa fa-exclamation-triangle" style="font-size: 16px;"></i>
-      <input
-        type="checkbox"
-        id="node-input-senderr"
-        style="accent-color: rgb(164, 35, 3); width: 16px; height: 16px; cursor: pointer;"
-      />
+  <div
+    class="form-row"
+    style="display: flex; align-items: flex-start; gap: 8px;"
+  >
+    <i
+      class="fa fa-exclamation-triangle"
+      style="font-size: 16px; width: 100px; text-align: left; margin-top: 2px;"
+    ></i>
 
-      Handle Error Manually
-    </label>
-    This setting adds a second output for handling errors when enabled;
-    otherwise, it stops the process when error happen.
+    <div style="display: flex; flex-direction: column; flex: 1;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <input
+          type="checkbox"
+          id="node-input-senderr"
+          style="accent-color: rgb(164, 35, 3); width: 16px; height: 16px; cursor: pointer;"
+        />
+        <label
+          for="node-input-senderr"
+          style="color: #b30000; font-weight: 500; margin: 0; white-space: nowrap;"
+        >
+          Handle Error Manually
+        </label>
+      </div>
+      <div>
+        This setting adds a second output for handling errors when enabled;
+        otherwise, it stops the process when error happen.
+      </div>
+    </div>
   </div>
   <br />
   <hr />
