@@ -225,7 +225,7 @@ module.exports = function (RED) {
         method: config.method,
       });
 
-      if (config.tableName && config.method) {
+      if (config.tablename && config.method) {
         operation = config.method;
 
         const isTableIdNeeds =
